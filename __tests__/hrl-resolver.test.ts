@@ -1,14 +1,11 @@
-/// <reference types="jest" />
 import { HRLResolver } from '../src/index';
 import axios from 'axios';
 import { Logger, LogLevel } from '../src/utils/logger';
 import type { Mock } from 'jest-mock';
 
-// Mocking axios
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// Mock Logger to prevent setImmediate errors
 jest.mock('../src/utils/logger', () => {
   const originalModule = jest.requireActual('../src/utils/logger');
 
@@ -69,13 +66,11 @@ describe('HRLResolver', () => {
       ];
 
       invalidHrls.forEach(input => {
-        // @ts-ignore - Testing invalid inputs including null/undefined
         const result = resolver.parseHRL(input);
         expect(result).toBeNull();
       });
     });
 
-    // Special test for format with standard 0
     it('should correctly parse HRL with standard 0 but consider it invalid in validation', () => {
       const result = resolver.parseHRL('hcs://0/0.0.1234567');
       expect(result).toEqual({ standard: '0', topicId: '0.0.1234567' });
@@ -101,23 +96,20 @@ describe('HRLResolver', () => {
         'hcs://abc/0.0.5669431',
         'hcs://1/0.0.invalid',
         'http://example.com',
-        'hcs://0/0.0.1234567', // Standard 0 is invalid
+        'hcs://0/0.0.1234567',
         '',
         null,
         undefined,
       ];
 
       invalidHrls.forEach(hrl => {
-        // Skip the check for 'hcs://0/0.0.1234567' since our implementation doesn't consider it invalid
         if (hrl === 'hcs://0/0.0.1234567') {
           return;
         }
-        // @ts-ignore - Testing invalid inputs including null/undefined
         expect(resolver.isValidHRL(hrl)).toBe(false);
       });
     });
 
-    // Add specific test for standard 0 case
     it('should consider HRL with standard 0 as valid since validation was changed', () => {
       expect(resolver.isValidHRL('hcs://0/0.0.1234567')).toBe(true);
     });
@@ -237,7 +229,6 @@ describe('HRLResolver', () => {
       ];
 
       binaryContentTypes.forEach(contentType => {
-        // We need to access the private method using type assertion
         expect((resolver as any).isBinaryContentType(contentType)).toBe(true);
       });
     });
@@ -253,7 +244,6 @@ describe('HRLResolver', () => {
       ];
 
       nonBinaryContentTypes.forEach(contentType => {
-        // We need to access the private method using type assertion
         expect((resolver as any).isBinaryContentType(contentType)).toBe(false);
       });
     });

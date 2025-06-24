@@ -1,0 +1,66 @@
+<!-- Counter Block Template -->
+<link rel="stylesheet" data-src="hcs://1/0.0.STYLES_TOPIC" data-script-id="counter-styles" />
+
+<div class="hashlink-block counter-block" data-block-id="{{blockId}}">
+  <h2>Counter: <span class="counter-value">{{attributes.count}}</span></h2>
+  
+  <div class="controls">
+    <button data-action="{{actions.increment}}" data-params='{"operation": "increment"{{#if attributes.step}}, "amount": {{attributes.step}}{{/if}}}'>
+      +
+    </button>
+    <button data-action="{{actions.decrement}}" data-params='{"operation": "decrement"{{#if attributes.step}}, "amount": {{attributes.step}}{{/if}}}'>
+      -
+    </button>
+    <button data-action="{{actions.reset}}" data-params='{"operation": "reset"}'>
+      Reset
+    </button>
+  </div>
+  
+  {{#if actionResults.increment}}
+  <div class="result">
+    Current value: {{actionResults.increment.count}}
+  </div>
+  {{/if}}
+  
+  {{#if actionResults.decrement}}
+  <div class="result">
+    Current value: {{actionResults.decrement.count}}
+  </div>
+  {{/if}}
+  
+  {{#if actionResults.reset}}
+  <div class="result">
+    Reset to: {{actionResults.reset.count}}
+  </div>
+  {{/if}}
+</div>
+
+<style>
+.counter-block {
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.counter-block .controls {
+  margin-top: 10px;
+}
+
+.counter-block .controls button {
+  margin: 0 5px;
+  padding: 8px 16px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.counter-block .result {
+  margin-top: 10px;
+  color: #28a745;
+}
+
+.counter-block .error {
+  margin-top: 10px;
+  color: #dc3545;
+}
+</style>

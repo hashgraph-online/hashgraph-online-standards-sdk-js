@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS-20 Browser Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #28a745;
+        }
+        .info {
+            color: #17a2b8;
+        }
+        .progress {
+            margin: 10px 0;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s ease;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HCS-20 Auditable Points Demo</h1>
+        
+        <div class="section">
+            <h2>1. Connect Wallet</h2>
+            <button id="connectBtn">Connect HashPack</button>
+            <button id="disconnectBtn" disabled>Disconnect</button>
+            <div id="walletStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. Deploy Points</h2>
+            <div>
+                <input type="text" id="pointsName" placeholder="Points Name" value="Demo Points">
+                <input type="text" id="pointsTick" placeholder="Ticker (lowercase)" value="demo">
+                <input type="text" id="maxSupply" placeholder="Max Supply" value="1000000">
+                <input type="text" id="mintLimit" placeholder="Mint Limit (optional)" value="1000">
+                <label>
+                    <input type="checkbox" id="usePrivate"> Use Private Topic
+                </label>
+                <button id="deployBtn" disabled>Deploy Points</button>
+            </div>
+            <div id="deployProgress" class="progress" style="display: none;">
+                <div id="deployProgressBar" class="progress-bar">0%</div>
+            </div>
+            <div id="deployStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. Mint Points</h2>
+            <div>
+                <input type="text" id="mintTick" placeholder="Ticker" value="demo">
+                <input type="text" id="mintAmount" placeholder="Amount" value="100">
+                <input type="text" id="mintTo" placeholder="Recipient Account">
+                <button id="mintBtn" disabled>Mint Points</button>
+            </div>
+            <div id="mintProgress" class="progress" style="display: none;">
+                <div id="mintProgressBar" class="progress-bar">0%</div>
+            </div>
+            <div id="mintStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>4. Transfer Points</h2>
+            <div>
+                <input type="text" id="transferTick" placeholder="Ticker" value="demo">
+                <input type="text" id="transferAmount" placeholder="Amount" value="50">
+                <input type="text" id="transferFrom" placeholder="From Account">
+                <input type="text" id="transferTo" placeholder="To Account">
+                <button id="transferBtn" disabled>Transfer Points</button>
+            </div>
+            <div id="transferProgress" class="progress" style="display: none;">
+                <div id="transferProgressBar" class="progress-bar">0%</div>
+            </div>
+            <div id="transferStatus" class="status"></div>
+        </div>
+
+        <div class="section">
+            <h2>5. Query Balance</h2>
+            <div>
+                <input type="text" id="balanceAccount" placeholder="Account ID">
+                <input type="text" id="balanceTick" placeholder="Ticker" value="demo">
+                <button id="balanceBtn" disabled>Check Balance</button>
+            </div>
+            <div id="balanceStatus" class="status"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { BrowserHCS20Client } from './path-to-compiled-sdk/hcs-20/browser.js';
+        
+        let client;
+        let accountId;
+
+        // Helper functions
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        function updateProgress(progressId, barId, percentage, stage = '') {
+            const progressEl = document.getElementById(progressId);
+            const barEl = document.getElementById(barId);
+            
+            if (percentage > 0) {
+                progressEl.style.display = 'block';
+                barEl.style.width = `${percentage}%`;
+                barEl.textContent = stage ? `${stage} - ${percentage}%` : `${percentage}%`;
+            } else {
+                progressEl.style.display = 'none';
+            }
+        }
+
+        function enableButtons() {
+            document.getElementById('deployBtn').disabled = false;
+            document.getElementById('mintBtn').disabled = false;
+            document.getElementById('transferBtn').disabled = false;
+            document.getElementById('balanceBtn').disabled = false;
+        }
+
+        function disableButtons() {
+            document.getElementById('deployBtn').disabled = true;
+            document.getElementById('mintBtn').disabled = true;
+            document.getElementById('transferBtn').disabled = true;
+            document.getElementById('balanceBtn').disabled = true;
+        }
+
+        // Connect wallet
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            try {
+                updateStatus('walletStatus', 'Connecting...', 'info');
+                
+                client = new BrowserHCS20Client({
+                    network: 'testnet',
+                    logger: console,
+                });
+
+                await client.connect();
+                
+                // In a real app, you would get the account ID from the pairing event
+                accountId = prompt('Enter your account ID (e.g., 0.0.123456)');
+                
+                if (accountId) {
+                    document.getElementById('mintTo').value = accountId;
+                    document.getElementById('transferFrom').value = accountId;
+                    document.getElementById('balanceAccount').value = accountId;
+                    
+                    updateStatus('walletStatus', `Connected: ${accountId}`, 'success');
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    enableButtons();
+                }
+            } catch (error) {
+                updateStatus('walletStatus', `Connection failed: ${error.message}`, 'error');
+            }
+        });
+
+        // Disconnect wallet
+        document.getElementById('disconnectBtn').addEventListener('click', async () => {
+            try {
+                await client.disconnect();
+                updateStatus('walletStatus', 'Disconnected', 'info');
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                disableButtons();
+            } catch (error) {
+                updateStatus('walletStatus', `Disconnect failed: ${error.message}`, 'error');
+            }
+        });
+
+        // Deploy points
+        document.getElementById('deployBtn').addEventListener('click', async () => {
+            try {
+                updateStatus('deployStatus', 'Deploying points...', 'info');
+                
+                const result = await client.deployPoints({
+                    name: document.getElementById('pointsName').value,
+                    tick: document.getElementById('pointsTick').value,
+                    maxSupply: document.getElementById('maxSupply').value,
+                    limitPerMint: document.getElementById('mintLimit').value || undefined,
+                    usePrivateTopic: document.getElementById('usePrivate').checked,
+                    progressCallback: (progress) => {
+                        updateProgress('deployProgress', 'deployProgressBar', progress.percentage, progress.stage);
+                        if (progress.error) {
+                            updateStatus('deployStatus', `Error: ${progress.error}`, 'error');
+                        }
+                    }
+                });
+                
+                updateStatus('deployStatus', `Points deployed!\nTick: ${result.tick}\nTopic: ${result.topicId}`, 'success');
+                updateProgress('deployProgress', 'deployProgressBar', 0);
+            } catch (error) {
+                updateStatus('deployStatus', `Deploy failed: ${error.message}`, 'error');
+                updateProgress('deployProgress', 'deployProgressBar', 0);
+            }
+        });
+
+        // Mint points
+        document.getElementById('mintBtn').addEventListener('click', async () => {
+            try {
+                updateStatus('mintStatus', 'Minting points...', 'info');
+                
+                const result = await client.mintPoints({
+                    tick: document.getElementById('mintTick').value,
+                    amount: document.getElementById('mintAmount').value,
+                    to: document.getElementById('mintTo').value,
+                    progressCallback: (progress) => {
+                        updateProgress('mintProgress', 'mintProgressBar', progress.percentage, progress.stage);
+                        if (progress.error) {
+                            updateStatus('mintStatus', `Error: ${progress.error}`, 'error');
+                        }
+                    }
+                });
+                
+                updateStatus('mintStatus', `Minted ${result.amount} ${result.tick} to ${result.to}`, 'success');
+                updateProgress('mintProgress', 'mintProgressBar', 0);
+            } catch (error) {
+                updateStatus('mintStatus', `Mint failed: ${error.message}`, 'error');
+                updateProgress('mintProgress', 'mintProgressBar', 0);
+            }
+        });
+
+        // Transfer points
+        document.getElementById('transferBtn').addEventListener('click', async () => {
+            try {
+                updateStatus('transferStatus', 'Transferring points...', 'info');
+                
+                const result = await client.transferPoints({
+                    tick: document.getElementById('transferTick').value,
+                    amount: document.getElementById('transferAmount').value,
+                    from: document.getElementById('transferFrom').value,
+                    to: document.getElementById('transferTo').value,
+                    progressCallback: (progress) => {
+                        updateProgress('transferProgress', 'transferProgressBar', progress.percentage, progress.stage);
+                        if (progress.error) {
+                            updateStatus('transferStatus', `Error: ${progress.error}`, 'error');
+                        }
+                    }
+                });
+                
+                updateStatus('transferStatus', `Transferred ${result.amount} ${result.tick} from ${result.from} to ${result.to}`, 'success');
+                updateProgress('transferProgress', 'transferProgressBar', 0);
+            } catch (error) {
+                updateStatus('transferStatus', `Transfer failed: ${error.message}`, 'error');
+                updateProgress('transferProgress', 'transferProgressBar', 0);
+            }
+        });
+
+        // Check balance
+        document.getElementById('balanceBtn').addEventListener('click', async () => {
+            try {
+                updateStatus('balanceStatus', 'Checking balance...', 'info');
+                
+                const balance = await client.getBalance(
+                    document.getElementById('balanceAccount').value,
+                    document.getElementById('balanceTick').value
+                );
+                
+                if (balance) {
+                    updateStatus('balanceStatus', `Balance: ${balance.balance} ${balance.tick}`, 'success');
+                } else {
+                    updateStatus('balanceStatus', 'No balance found', 'info');
+                }
+            } catch (error) {
+                updateStatus('balanceStatus', `Balance check failed: ${error.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

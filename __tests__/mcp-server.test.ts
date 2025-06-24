@@ -12,7 +12,6 @@ describe('MCP Server Profile', () => {
   let mockConfig: MCPServerConfig;
 
   beforeEach(() => {
-    // Create a mock config to return from the builder
     mockConfig = {
       name: 'Test MCP Server',
       bio: 'A test MCP server for unit tests',
@@ -50,7 +49,6 @@ describe('MCP Server Profile', () => {
       },
     };
 
-    // Create a mock builder that returns our predefined config
     mockBuilder = {
       setName: jest.fn().mockReturnThis(),
       setBio: jest.fn().mockReturnThis(),
@@ -74,7 +72,6 @@ describe('MCP Server Profile', () => {
       build: jest.fn().mockReturnValue(mockConfig),
     };
 
-    // Mock the constructor
     jest
       .spyOn(MCPServerBuilder.prototype, 'build')
       .mockImplementation(function () {
@@ -88,7 +85,6 @@ describe('MCP Server Profile', () => {
 
   describe('MCPServerBuilder', () => {
     it('should create a valid MCP server configuration', () => {
-      // Use the real builder but with mocked build method
       const builder = new MCPServerBuilder();
       const config = builder.build();
 
@@ -129,7 +125,6 @@ describe('MCP Server Profile', () => {
     });
 
     it('should support different verification methods', () => {
-      // Test DNS verification
       const dnsMockConfig = { ...mockConfig };
       dnsMockConfig.mcpServer = { ...mockConfig.mcpServer };
       dnsMockConfig.mcpServer.verification = {
@@ -145,7 +140,6 @@ describe('MCP Server Profile', () => {
       expect(dnsConfig.mcpServer.verification?.type).toBe(VerificationType.DNS);
       expect(dnsConfig.mcpServer.verification?.value).toBe('example.com');
 
-      // Test signature verification
       const signatureMockConfig = { ...mockConfig };
       signatureMockConfig.mcpServer = { ...mockConfig.mcpServer };
       signatureMockConfig.mcpServer.verification = {
@@ -164,7 +158,6 @@ describe('MCP Server Profile', () => {
         'a1b2c3d4e5f6',
       );
 
-      // Test challenge verification
       const challengeMockConfig = { ...mockConfig };
       challengeMockConfig.mcpServer = { ...mockConfig.mcpServer };
       challengeMockConfig.mcpServer.verification = {
@@ -242,7 +235,7 @@ describe('MCP Server Profile', () => {
       );
 
       expect(profile).toBeDefined();
-      expect(profile.type).toBe(2); // ProfileType.MCP_SERVER
+      expect(profile.type).toBe(2);
       expect(profile.display_name).toBe('Test MCP Server');
       expect(profile.alias).toBe('test_mcp');
       expect(profile.bio).toBe('A test MCP server for unit tests');
@@ -261,15 +254,13 @@ describe('MCP Server Profile', () => {
     });
 
     it('should validate MCP server profiles', () => {
-      // For testing validation, we'll use a spy with different implementations
       const validateSpy = jest.spyOn(client, 'validateProfile');
 
-      // For the valid profile test
       validateSpy.mockReturnValueOnce({ valid: true, errors: [] });
 
       const validProfile: MCPServerProfile = {
         version: '1.0',
-        type: 2, // ProfileType.MCP_SERVER
+        type: 2,
         display_name: 'Test MCP Server',
         mcpServer: {
           version: '2024-06-01',
@@ -285,7 +276,6 @@ describe('MCP Server Profile', () => {
       const validationResult = client.validateProfile(validProfile);
       expect(validationResult.valid).toBe(true);
 
-      // For the invalid profile test
       validateSpy.mockReturnValueOnce({
         valid: false,
         errors: ['Missing required field'],
@@ -293,11 +283,9 @@ describe('MCP Server Profile', () => {
 
       const invalidProfile = {
         version: '1.0',
-        type: 2, // ProfileType.MCP_SERVER
+        type: 2,
         display_name: 'Test MCP Server',
-        mcpServer: {
-          // Missing required fields
-        },
+        mcpServer: {},
       };
 
       const invalidResult = client.validateProfile(invalidProfile);

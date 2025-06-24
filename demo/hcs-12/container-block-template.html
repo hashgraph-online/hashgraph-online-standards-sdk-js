@@ -1,0 +1,136 @@
+<!-- Container Block Template -->
+<div class="hashlink-block container-block" data-block-id="{{blockId}}">
+  <div class="container-header">
+    <h2>{{attributes.title}}</h2>
+    {{#if attributes.description}}
+    <p class="container-description">{{attributes.description}}</p>
+    {{/if}}
+  </div>
+  
+  <div class="container-body">
+    <div class="nested-block-wrapper" {{#unless attributes.showCounter}}style="display: none;"{{/unless}} data-toggle-target="counter">
+      <h3>Nested Counter Block</h3>
+      <div data-hashlink="hcs://12/{{attributes.counterBlockId}}" 
+           data-attributes='{"count": {{attributes.initialCount}}, "step": {{attributes.counterStep}}}'
+           data-actions='{"increment": "{{attributes.counterActionId}}", "decrement": "{{attributes.counterActionId}}", "reset": "{{attributes.counterActionId}}"}'>
+        <!-- Counter block will be rendered here -->
+      </div>
+    </div>
+    
+    <div class="nested-block-wrapper" {{#unless attributes.showStats}}style="display: none;"{{/unless}} data-toggle-target="stats">
+      <h3>Statistics Display</h3>
+      <div data-hashlink="hcs://12/{{attributes.statsBlockId}}"
+           data-attributes='{"title": "Container Stats", "values": {{attributes.statsValues}}}'>
+        <!-- Stats block will be rendered here -->
+      </div>
+    </div>
+  </div>
+  
+  <div class="container-footer">
+    <button data-action="{{actions.toggleCounter}}" data-params='{"operation": "toggleCounter"}'>
+      Toggle Counter
+    </button>
+    <button data-action="{{actions.toggleStats}}" data-params='{"operation": "toggleStats"}'>
+      Toggle Stats
+    </button>
+  </div>
+</div>
+
+<style>
+.container-block {
+  padding: 20px;
+  border: 2px solid #333;
+  border-radius: 12px;
+  background: #f9f9f9;
+  margin: 20px 0;
+}
+
+.container-header {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.container-header h2 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.container-description {
+  color: #666;
+  margin: 0;
+}
+
+.container-body {
+  min-height: 100px;
+}
+
+.nested-block-wrapper {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nested-block-wrapper h3 {
+  margin: 0 0 15px 0;
+  color: #555;
+  font-size: 1.1em;
+}
+
+.container-footer {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  gap: 10px;
+}
+
+.container-footer button {
+  padding: 8px 16px;
+  background: #007cba;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.container-footer button:hover {
+  background: #005a8b;
+}
+</style>
+
+<script>
+// Handle toggle action results to update UI
+(function() {
+  const blockId = '{{blockId}}';
+  
+  // Listen for state changes from the block state manager
+  if (window.StandardsSDK && window.StandardsSDK.BlockStateManager) {
+    const stateManager = window.StandardsSDK.BlockStateManager.getInstance();
+    
+    // Subscribe to state changes for this block
+    stateManager.onStateChange(blockId, (newState) => {
+      const container = document.querySelector(`[data-block-id="${blockId}"]`);
+      if (!container) return;
+      
+      // Update counter visibility
+      if (newState.attributes && 'showCounter' in newState.attributes) {
+        const counterWrapper = container.querySelector('[data-toggle-target="counter"]');
+        if (counterWrapper) {
+          counterWrapper.style.display = newState.attributes.showCounter ? 'block' : 'none';
+        }
+      }
+      
+      // Update stats visibility
+      if (newState.attributes && 'showStats' in newState.attributes) {
+        const statsWrapper = container.querySelector('[data-toggle-target="stats"]');
+        if (statsWrapper) {
+          statsWrapper.style.display = newState.attributes.showStats ? 'block' : 'none';
+        }
+      }
+    });
+  }
+})();
+</script>

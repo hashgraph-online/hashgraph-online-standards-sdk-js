@@ -1,0 +1,2514 @@
+<!doctype html>
+<html>
+  <head>
+    <title>HCS-12 SDK Testing Tool</title>
+
+    <script
+      data-hcs-config
+      data-hcs-cdn-url="https://kiloscribe.com/api/inscription-cdn/"
+      data-hcs-network="mainnet"
+      data-hcs-debug="true"
+      data-hcs-retry-attempts="5"
+      data-hcs-retry-backoff="500"
+    ></script>
+
+    <script
+      data-src="hcs://1/0.0.8084872"
+      data-script-id="wallet-connect"
+      data-load-order="1"
+    ></script>
+
+    <script
+      src="../../dist/umd/standards-sdk.umd.js"
+      data-script-id="standards-sdk"
+      data-load-order="2"
+    ></script>
+    
+    <script
+      src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"
+      data-script-id="handlebars"
+      data-load-order="3"
+    ></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .section h2 {
+        margin-top: 0;
+        color: #555;
+      }
+      button {
+        background: #007cba;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #005a8b;
+      }
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      .output {
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .status {
+        padding: 8px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status.info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .form-group {
+        margin: 10px 0;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .wallet-info {
+        background: #e8f4f8;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+        font-family: monospace;
+      }
+      .demo-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+      .demo-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .demo-btn {
+        transition: all 0.2s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>HCS-12 HashLinks Demo</h1>
+      <p style="text-align: center; color: #666; margin-bottom: 10px;">
+        Experience decentralized, composable blockchain applications
+      </p>
+      <p style="text-align: center; font-size: 14px; color: #999;">
+        Connect your wallet, then click a demo to see HashLinks in action!
+      </p>
+
+      <div class="section" style="text-align: center;">
+        <h2>🔐 Step 1: Connect Wallet</h2>
+        <div id="wallet-status" class="status info" style="margin: 10px auto; max-width: 400px;">
+          Loading wallet connect...
+        </div>
+        <div id="wallet-info" class="wallet-info" style="display: none; margin: 10px auto; max-width: 400px;">
+          ✅ Connected: <span id="wallet-account"></span>
+        </div>
+        <button id="connect-wallet-btn" disabled style="padding: 12px 30px; font-size: 16px;">Connect Wallet</button>
+        <button id="disconnect-wallet-btn" style="display: none; padding: 12px 30px; font-size: 16px;">
+          Disconnect
+        </button>
+      </div>
+
+      <!-- Client status is now integrated into the demo flow -->
+      <div id="client-status" style="display: none;"></div>
+
+      <div class="section" style="background: #e8f5e9; border: 2px solid #4caf50; text-align: center;">
+        <h2>🚀 Step 2: Choose a Demo</h2>
+        <p style="margin-bottom: 20px;">Click any demo to automatically load and render the blocks!</p>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center;">
+          <button id="demo-simple-counter" class="demo-btn" style="padding: 15px 25px; background: #2196f3; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;" disabled>
+            <strong>Simple Counter</strong><br>
+            <small>Basic counter with increment/decrement</small>
+          </button>
+          
+          <button id="demo-nested-blocks" class="demo-btn" style="padding: 15px 25px; background: #9c27b0; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;" disabled>
+            <strong>Nested Blocks</strong><br>
+            <small>Container with counter & stats blocks</small>
+          </button>
+          
+          <button id="demo-full-assembly" class="demo-btn" style="padding: 15px 25px; background: #ff9800; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;" disabled>
+            <strong>Full Assembly</strong><br>
+            <small>Complete app with all blocks</small>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Demo Output Section - Always visible -->
+      <div class="section" id="render-section" style="display: none;">
+        <h2>Demo Output</h2>
+        <div id="render-output" style="padding: 20px; background: #f8f8f8; border: 2px dashed #ccc; border-radius: 4px; min-height: 100px;">
+          <p style="color: #666; text-align: center;">Rendered blocks will appear here</p>
+        </div>
+      </div>
+      
+      <details>
+        <summary style="cursor: pointer; padding: 10px; background: #f5f5f5; border-radius: 4px; margin-bottom: 10px;">
+          <strong>Advanced Options</strong> (Topic IDs, Registry Operations, etc.)
+        </summary>
+        
+      <div class="section">
+        <h2>Registry Operations</h2>
+        
+        <div class="info-box" style="background: #f0f8ff; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+          <strong>Note: Block Registry is deprecated in HCS-12</strong>
+          <p style="margin: 10px 0;">Blocks are now stored as HCS-1 inscriptions, not in a registry.</p>
+          <strong>Test Topic IDs (Testnet) - Updated 2025-06-22 with Two Assemblies:</strong>
+          <ul style="margin: 10px 0 0 20px; padding: 0; list-style: none;">
+            <li>✅ Action Registry: <code>0.0.6213054</code></li>
+            <li>✅ Assembly Registry: <code>0.0.6213055</code> (global directory)</li>
+            <li style="font-weight: bold; margin-top: 10px;">Assemblies:</li>
+            <li>🚀 Simple Counter Assembly: <code>0.0.6213079</code> (Basic counter only)</li>
+            <li>🚀 Nested Blocks Assembly: <code>0.0.6213080</code> (Container with nested blocks)</li>
+            <li style="font-weight: bold; margin-top: 10px;">Block Definitions:</li>
+            <li>📄 Counter Block: <code>0.0.6213059</code></li>
+            <li>📄 Stats Block: <code>0.0.6213071</code></li>
+            <li>📄 Container Block: <code>0.0.6213078</code> (demonstrates nesting)</li>
+            <li style="font-weight: bold; margin-top: 10px;">Action Topic IDs:</li>
+            <li>⚙️ WASM Module: <code>0.0.6213057</code></li>
+            <li>⚙️ JS Wrapper: <code>0.0.6213056</code></li>
+          </ul>
+          <p style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px;">
+            <strong>✅ Updated (2025-06-22):</strong> Nested blocks working!
+            Blocks can now include other blocks using <code>data-hashlink</code> attributes.
+            Container block demonstrates template-based composition.
+          </p>
+          <p style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px;">
+            <strong>⚠️ Note:</strong> If you see "Action not found" errors, click "Sync Action Registry" first.
+            The counter action WASM is at topic <code>0.0.6213057</code>.
+          </p>
+          <p style="background: #e7f3ff; color: #004085; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px;">
+            <strong>💡 Tip:</strong> We now have two assemblies:
+            <br/>• Simple Counter (<code>0.0.6213079</code>) - just the counter block
+            <br/>• Nested Blocks (<code>0.0.6213080</code>) - container with nested blocks
+            <br/>To render individual blocks, select a block definition topic and click "Render Block".
+          </p>
+          <small style="display: block; margin-top: 10px;">Latest topics created with rebuilt SDK and fixed WasmExecutor.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="topic-id">Topic ID:</label>
+          <input
+            type="text"
+            id="topic-id"
+            placeholder="0.0.123456"
+            value="0.0.6213079"
+          />
+          <small style="display: block; margin-top: 5px; color: #666;">
+            Enter a topic ID to sync registries or load assemblies/blocks. Use quick select buttons below.
+          </small>
+          <div style="margin-top: 5px;">
+            <small>Quick select:</small>
+            <button onclick="document.getElementById('topic-id').value='0.0.6213054'; document.getElementById('mirror-topic-id').value='0.0.6213054'" style="padding: 2px 8px; font-size: 12px;">Action Registry</button>
+            <button onclick="document.getElementById('topic-id').value='0.0.6213055'; document.getElementById('mirror-topic-id').value='0.0.6213055'" style="padding: 2px 8px; font-size: 12px;">Assembly Registry</button>
+            <button onclick="document.getElementById('topic-id').value='0.0.6213079'; document.getElementById('mirror-topic-id').value='0.0.6213079'" style="padding: 2px 8px; font-size: 12px;">Simple Assembly</button>
+            <button onclick="document.getElementById('topic-id').value='0.0.6213080'; document.getElementById('mirror-topic-id').value='0.0.6213080'" style="padding: 2px 8px; font-size: 12px;">Nested Assembly</button>
+            <button onclick="document.getElementById('topic-id').value='0.0.6213078'; document.getElementById('mirror-topic-id').value='0.0.6213078'" style="padding: 2px 8px; font-size: 12px; background: #6f42c1; color: white;">Container Block (Def)</button>
+            <button onclick="showNestedBlocksDemo()" style="padding: 2px 8px; font-size: 12px; background: #28a745; color: white;">🆕 Nested Blocks Demo</button>
+          </div>
+        </div>
+
+        <button id="sync-action-btn" disabled>Sync Action Registry</button>
+        <button id="sync-assembly-btn" disabled>Sync Assembly Registry</button>
+        <button id="list-actions-btn" disabled>List Actions</button>
+        <button id="list-assemblies-btn" disabled>List Assemblies</button>
+        <button id="list-blocks-btn" disabled>List Blocks</button>
+        <button id="load-assembly-btn" disabled>Load Assembly Details</button>
+        <button id="render-block-btn" disabled style="background: #28a745; color: white;">Render Block</button>
+      </div>
+
+      <div class="section">
+        <h2>Mirror Node Operations</h2>
+
+        <div class="form-group">
+          <label for="mirror-topic-id">Topic ID for Messages:</label>
+          <input
+            type="text"
+            id="mirror-topic-id"
+            placeholder="0.0.123456"
+            value=""
+          />
+        </div>
+
+        <button id="get-messages-btn" disabled>Get Topic Messages</button>
+        <button id="get-info-btn" disabled>Get Topic Info</button>
+      </div>
+
+      <div class="section">
+        <h2>Create Registry Topics</h2>
+        <button id="create-action-topic-btn" disabled>
+          Create Action Registry
+        </button>
+        <button id="create-assembly-topic-btn" disabled>
+          Create Assembly Registry
+        </button>
+        <button id="create-assembly-instance-btn" disabled>
+          Create New Assembly
+        </button>
+      </div>
+
+      <div class="section">
+        <h2>Log Output</h2>
+        <div id="output" class="output">Ready for operations...</div>
+      </div>
+      
+      </details>
+      
+      <div class="section" id="nested-demo-section" style="display: none; background: #f0f8ff; border: 2px solid #007cba;">
+        <h2>🆕 Nested Blocks Demo</h2>
+        <p style="color: #666;">This demonstrates template-based composition where blocks include other blocks using <code>data-hashlink</code> attributes.</p>
+        <div id="nested-demo-instructions" style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+          <h3>To test nested blocks:</h3>
+          <ol>
+            <li>Click the "Container Block (Def)" quick select button above (or enter <code>0.0.6213078</code>)</li>
+            <li>Click the green "Render Block" button to render the container block</li>
+            <li>You'll see a container that includes both a counter and stats display block</li>
+            <li>The counter will have custom attributes (count: 10, step: 5) passed from the container</li>
+          </ol>
+          <p style="margin-top: 10px;"><strong>Note:</strong> Use "Load Assembly Details" for assemblies (like <code>0.0.6213079</code> or <code>0.0.6213080</code>) and "Render Block" for individual block definitions.</p>
+          <p style="margin-top: 10px;"><strong>How it works:</strong></p>
+          <ul>
+            <li>The Container Block template includes <code>data-hashlink="hcs://12/[blockId]"</code> elements</li>
+            <li>The BlockRenderer scans for these HashLinks and resolves them</li>
+            <li>Child blocks are loaded and rendered recursively</li>
+            <li>Actions and state are properly isolated between parent and child blocks</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize after HCS loads
+      window.HCSReady = async () => {
+        console.log('HCS Ready - initializing HCS-12 SDK Testing Tool');
+
+        // Get SDK instances
+        const wcSDK = window.HashinalsWalletConnectSDK;
+        const StandardsSDK = window.StandardsSDK;
+
+        if (!wcSDK) {
+          console.error('HashinalsWalletConnectSDK not loaded');
+          document.getElementById('wallet-status').textContent =
+            'Error: Wallet Connect SDK not loaded';
+          document.getElementById('wallet-status').className = 'status error';
+          return;
+        }
+
+        if (!StandardsSDK) {
+          console.error('Standards SDK not loaded');
+          document.getElementById('wallet-status').textContent =
+            'Error: Standards SDK not loaded';
+          document.getElementById('wallet-status').className = 'status error';
+          return;
+        }
+
+        const { HCS12BrowserClient, Logger, RegistryType } = StandardsSDK;
+        const hbarSDK = window.HashgraphSDK;
+        const ledger = hbarSDK.LedgerId.TESTNET;
+        const PROJECT_ID = 'bfd9ad3ea26e2c73eb21e8f9c750c166';
+        const APP_METADATA = {
+          name: 'HCS-12 SDK Testing Tool',
+          description: 'Developer tool for testing HCS-12 SDK functionality',
+          url: window.location.origin,
+          icons: ['https://hashgraph.online/logo.png'],
+        };
+
+        // Global variables
+        let client = null;
+        let currentAccountId = null;
+        let logger = null;
+        
+        // Known registry topic IDs from demo - Updated 2025-06-22
+        const REGISTRY_TOPICS = {
+          actionRegistry: '0.0.6213054',
+          assemblyRegistry: '0.0.6213055',
+          simpleAssembly: '0.0.6213079',
+          nestedAssembly: '0.0.6213080',
+          counterBlockDef: '0.0.6213059',
+          statsBlockDef: '0.0.6213071',
+          containerBlockDef: '0.0.6213078',
+          // The action topic IDs
+          wasmModule: '0.0.6213057',
+          jsWrapper: '0.0.6213056'
+        };
+        // Use the updated topics from above
+        // WASM and JS topics are stored in the action registry
+
+        // Utility functions
+        function updateStatus(elementId, message, type = 'info') {
+          const statusElement = document.getElementById(elementId);
+          statusElement.textContent = message;
+          statusElement.className = `status ${type}`;
+        }
+
+        function log(message, data = null) {
+          const output = document.getElementById('output');
+          const timestamp = new Date().toLocaleTimeString();
+          let logMessage = `[${timestamp}] ${message}`;
+
+          if (data) {
+            logMessage += '\n' + JSON.stringify(data, null, 2);
+          }
+
+          output.textContent = logMessage + '\n\n' + output.textContent;
+        }
+
+        function handleError(error, operation) {
+          console.error(`Error in ${operation}:`, error);
+          log(`Error in ${operation}: ${error.message}`, error);
+        }
+
+        function enableButtons(enabled) {
+          document
+            .querySelectorAll(
+              'button:not(#connect-wallet-btn):not(#disconnect-wallet-btn)',
+            )
+            .forEach(btn => {
+              btn.disabled = !enabled;
+            });
+        }
+        
+        // One-click demo handlers
+        async function runDemo(demoType) {
+          try {
+            log(`Running ${demoType} demo...`);
+            updateStatus('client-status', `Setting up ${demoType} demo...`, 'info');
+            
+            // Ensure client is initialized
+            if (!client) {
+              throw new Error('Client not initialized. Please connect wallet first.');
+            }
+            
+            // Sync action registry first
+            log('Syncing action registry...');
+            await client.actionRegistry.sync();
+            
+            switch (demoType) {
+              case 'simple-counter':
+                // Load and render the simple assembly (contains action mappings)
+                log('Loading simple counter assembly...');
+                await window.renderAssembly(REGISTRY_TOPICS.simpleAssembly);
+                updateStatus('client-status', 'Simple counter demo ready!', 'success');
+                break;
+                
+              case 'nested-blocks':
+                // Load and render the nested assembly (contains all blocks and action mappings)
+                log('Loading nested blocks assembly...');
+                await window.renderNestedAssembly(REGISTRY_TOPICS.nestedAssembly);
+                updateStatus('client-status', 'Nested blocks demo ready!', 'success');
+                break;
+                
+              case 'full-assembly':
+                // Load and display the nested assembly (has all blocks)
+                log('Loading full nested assembly...');
+                const assembly = await client.loadAssembly(REGISTRY_TOPICS.nestedAssembly);
+                
+                if (assembly && assembly.state && assembly.state.blocks) {
+                  log(`Assembly loaded with ${assembly.state.blocks.length} blocks`);
+                  
+                  // Display assembly info
+                  const renderOutput = document.getElementById('render-output');
+                  let html = '<div style="padding: 20px;">';
+                  html += `<h3>Assembly: ${assembly.state.name || 'Unnamed'} v${assembly.state.version || '1.0.0'}</h3>`;
+                  html += `<p>${assembly.state.description || 'No description'}</p>`;
+                  html += '<h4>Blocks in this assembly:</h4>';
+                  
+                  assembly.state.blocks.forEach((block, index) => {
+                    html += `<div style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;">`;
+                    html += `<strong>Block ${index + 1}:</strong> ${block.block_t_id}<br/>`;
+                    if (block.definition?.title) {
+                      html += `Title: ${block.definition.title}<br/>`;
+                    }
+                    if (block.actions) {
+                      html += `Actions: ${Object.entries(block.actions).map(([key, topicId]) => key).join(', ')}<br/>`;
+                    }
+                    html += `</div>`;
+                  });
+                  
+                  html += '<p style="margin-top: 20px;"><em>To render individual blocks, use the block topic IDs above.</em></p>';
+                  html += '</div>';
+                  
+                  renderOutput.innerHTML = html;
+                  document.getElementById('render-section').style.display = 'block';
+                  renderOutput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  
+                  updateStatus('client-status', 'Full assembly loaded!', 'success');
+                } else {
+                  throw new Error('Failed to load assembly');
+                }
+                break;
+            }
+          } catch (error) {
+            log(`Demo error: ${error.message}`);
+            updateStatus('client-status', `Demo failed: ${error.message}`, 'error');
+          }
+        }
+
+        // Update wallet status display
+        async function updateUI(accountId, balance) {
+          currentAccountId = accountId;
+
+          if (accountId) {
+            updateStatus('wallet-status', `Connected: ${accountId}`, 'success');
+            document.getElementById('wallet-info').style.display = 'block';
+            document.getElementById('wallet-account').textContent = accountId;
+            document.getElementById('connect-wallet-btn').style.display =
+              'none';
+            document.getElementById('disconnect-wallet-btn').style.display =
+              'inline-block';
+            // Auto-initialize client when wallet connects
+            log(`Wallet connected: ${accountId} (Balance: ${balance} HBAR)`);
+            initializeClient();
+          } else {
+            updateStatus('wallet-status', 'No wallet connected', 'info');
+            document.getElementById('wallet-info').style.display = 'none';
+            document.getElementById('connect-wallet-btn').style.display =
+              'inline-block';
+            document.getElementById('disconnect-wallet-btn').style.display =
+              'none';
+            // Client will be initialized when wallet connects
+            enableButtons(false);
+            currentAccountId = null;
+            client = null;
+          }
+        }
+
+        // Check for existing connection
+        try {
+          const accountResponse = await wcSDK.initAccount(
+            PROJECT_ID,
+            APP_METADATA,
+            ledger,
+          );
+          if (accountResponse && accountResponse.accountId) {
+            updateUI(accountResponse.accountId, accountResponse.balance);
+          } else {
+            updateStatus(
+              'wallet-status',
+              'Wallet connect ready. Click "Connect Wallet" to begin.',
+              'info',
+            );
+            document.getElementById('connect-wallet-btn').disabled = false;
+          }
+        } catch (error) {
+          console.error('Failed to initialize wallet connect:', error);
+          updateStatus(
+            'wallet-status',
+            'Wallet connect ready. Click "Connect Wallet" to begin.',
+            'info',
+          );
+          document.getElementById('connect-wallet-btn').disabled = false;
+        }
+
+        // Connect wallet
+        document
+          .getElementById('connect-wallet-btn')
+          .addEventListener('click', async () => {
+            try {
+              const { accountId, balance } = await wcSDK.connectWallet(
+                PROJECT_ID,
+                APP_METADATA,
+                ledger,
+              );
+              updateUI(accountId, balance);
+            } catch (error) {
+              handleError(error, 'wallet connection');
+              updateStatus(
+                'wallet-status',
+                'Failed to connect wallet',
+                'error',
+              );
+            }
+          });
+
+        // Disconnect wallet
+        document
+          .getElementById('disconnect-wallet-btn')
+          .addEventListener('click', async () => {
+            try {
+              await wcSDK.disconnectWallet();
+              updateUI(null, null);
+              updateStatus(
+                'client-status',
+                'Client not initialized. Connect wallet first.',
+                'info',
+              );
+              log('Wallet disconnected');
+            } catch (error) {
+              handleError(error, 'wallet disconnection');
+            }
+          });
+
+
+        // Create the actual initializeClient function that we're calling
+        async function initializeClient() {
+          try {
+            // Access Logger and HCS12BrowserClient from StandardsSDK global
+            const { Logger, HCS12BrowserClient } = StandardsSDK;
+            
+            logger = new Logger({ module: 'HCS12-SDK-Test' });
+
+            client = new HCS12BrowserClient({
+              network: 'testnet',
+              logger: logger,
+              hwc: wcSDK,
+            });
+
+            updateStatus(
+              'client-status',
+              'HCS-12 Browser Client initialized successfully',
+              'success',
+            );
+            // Auto-initialize registries after client is ready
+            initializeRegistries();
+            log('Client initialized with testnet configuration');
+          } catch (error) {
+            handleError(error, 'client initialization');
+            updateStatus('client-status', `Error: ${error.message}`, 'error');
+          }
+        }
+
+        // Auto-initialize registries
+        async function initializeRegistries() {
+            try {
+              if (!client) {
+                throw new Error(
+                  'Client not initialized. Please initialize client first.',
+                );
+              }
+
+              // Initialize with known topic IDs (no block registry in new approach)
+              client.initializeRegistries({
+                action: REGISTRY_TOPICS.actionRegistry,
+                assembly: REGISTRY_TOPICS.assemblyRegistry
+              });
+              
+              updateStatus(
+                'client-status',
+                'Syncing registries...',
+                'info',
+              );
+              
+              // Automatically sync both registries
+              try {
+                await client.actionRegistry.sync();
+                log('Action registry synced successfully');
+                
+                await client.assemblyRegistry.sync();
+                log('Assembly registry synced successfully');
+                
+                updateStatus(
+                  'client-status',
+                  'Registries initialized and synced',
+                  'success',
+                );
+                enableButtons(true);
+                
+                // Enable demo buttons specifically
+                document.querySelectorAll('.demo-btn').forEach(btn => {
+                  btn.disabled = false;
+                });
+                
+                // Update wallet status to show ready
+                updateStatus('wallet-status', '✅ Ready! Choose a demo above.', 'success');
+              } catch (syncError) {
+                updateStatus(
+                  'client-status',
+                  'Registry sync failed: ' + syncError.message,
+                  'error',
+                );
+                log('Registry sync error:', syncError);
+                enableButtons(true); // Still enable buttons for manual retry
+              }
+            } catch (error) {
+              handleError(error, 'registry initialization');
+            }
+        }
+
+        // Sync registry
+        async function syncRegistry(type) {
+          try {
+            if (!client) {
+              throw new Error('Client not initialized');
+            }
+
+            const topicId = document.getElementById('topic-id').value;
+            if (!topicId) {
+              throw new Error('Please enter a topic ID');
+            }
+
+            // Reinitialize registries with the new topic ID
+            const topicIds = {};
+            switch (type) {
+              case 'action':
+                topicIds.action = topicId;
+                break;
+              case 'block':
+                topicIds.block = topicId;
+                break;
+              case 'assembly':
+                topicIds.assembly = topicId;
+                break;
+              default:
+                throw new Error('Invalid registry type');
+            }
+
+            // Reinitialize registries with new topic IDs
+            client.initializeRegistries(topicIds);
+
+            // Get the registry after reinitialization
+            let registry;
+            switch (type) {
+              case 'action':
+                registry = client.actionRegistry;
+                break;
+              case 'block':
+                registry = client.blockRegistry;
+                break;
+              case 'assembly':
+                registry = client.assemblyRegistry;
+                break;
+            }
+
+            if (!registry) {
+              throw new Error('Registry not initialized');
+            }
+
+            // Sync the registry
+            await registry.sync();
+
+            log(`${type} registry synced successfully from topic ${topicId}`);
+            updateStatus('client-status', `${type} registry synced`, 'success');
+          } catch (error) {
+            handleError(error, `${type} registry sync`);
+          }
+        }
+
+        // List entries
+        async function listEntries(type) {
+          try {
+            if (!client) {
+              throw new Error('Client not initialized');
+            }
+
+            if (type === 'block') {
+              // For blocks, we need to load them from an assembly or test a single block definition
+              const topicId = document.getElementById('topic-id').value;
+              if (!topicId) {
+                throw new Error('Please enter an assembly topic ID or block definition topic ID');
+              }
+              
+              // First try to load as an assembly
+              try {
+                log('Trying to load as assembly...');
+                
+                // Debug: try to get messages directly
+                try {
+                  const messages = await client.mirrorNode.getTopicMessagesByFilter(topicId, {
+                    order: 'asc',
+                    limit: 10
+                  });
+                  log(`Found ${messages.length} messages in assembly topic`);
+                  messages.forEach((msg, i) => {
+                    if (msg.message) {
+                      try {
+                        const decoded = atob(msg.message);
+                        const parsed = JSON.parse(decoded);
+                        log(`Message ${i}: ${parsed.op}`, parsed);
+                      } catch (e) {
+                        log(`Failed to decode message ${i}`);
+                      }
+                    }
+                  });
+                } catch (e) {
+                  log('Failed to get messages directly:', e.message);
+                }
+                
+                const assembly = await client.loadAssembly(topicId);
+                
+                if (assembly && assembly.blocks && assembly.blocks.length > 0) {
+                  log(`Found ${assembly.blocks.length} blocks in assembly`);
+                  log('Assembly blocks:', assembly.blocks.map(b => ({
+                    block_t_id: b.block_t_id,
+                    hasDefinition: !!b.definition,
+                    hasTemplate: !!b.template,
+                    actions: b.actions
+                  })));
+                  displayBlockEntries(assembly.blocks);
+                  return;
+                } else {
+                  log('No blocks found in assembly, trying as single block definition...');
+                }
+              } catch (assemblyError) {
+                log(`Assembly loading failed: ${assemblyError.message}, trying as single block definition...`);
+              }
+              
+              // Try to load as a single block definition
+              try {
+                log(`Loading single block definition: ${topicId}`);
+                
+                // Try to fetch directly to see if it's a network issue
+                try {
+                  const testUrl = `https://kiloscribe.com/api/inscription-cdn/${topicId}?network=testnet`;
+                  log(`Testing direct fetch to: ${testUrl}`);
+                  const testResponse = await fetch(testUrl);
+                  log(`Direct fetch status: ${testResponse.status}`);
+                  if (testResponse.ok) {
+                    const testData = await testResponse.text();
+                    log(`Direct fetch successful, data length: ${testData.length}`);
+                  }
+                } catch (fetchError) {
+                  log(`Direct fetch failed: ${fetchError.message}`);
+                }
+                
+                const blockData = await client.loadBlock(topicId);
+                
+                if (blockData && blockData.definition) {
+                  const fakeBlock = {
+                    block_t_id: topicId,
+                    definition: blockData.definition,
+                    template: blockData.template,
+                    actions: {},
+                    attributes: {},
+                    children: []
+                  };
+                  
+                  log('Successfully loaded single block definition', blockData.definition);
+                  displayBlockEntries([fakeBlock]);
+                  return;
+                }
+              } catch (blockError) {
+                console.error('Block loading error details:', blockError);
+                throw new Error(`Failed to load as assembly or block definition: ${blockError.message}`);
+              }
+              
+              throw new Error('No blocks found');
+            }
+
+            let registry;
+            switch (type) {
+              case 'action':
+                registry = client.actionRegistry;
+                break;
+              case 'assembly':
+                registry = client.assemblyRegistry;
+                break;
+              default:
+                throw new Error('Invalid registry type');
+            }
+
+            if (!registry) {
+              throw new Error('Registry not initialized');
+            }
+
+            // Sync the registry first to ensure we have latest data
+            log(`Syncing ${type} registry...`);
+            await registry.sync();
+            
+            const entries = await registry.listEntries();
+            log(`${type} registry entries (${entries.length} found)`, entries);
+            
+            // Display entries in a more user-friendly way
+            if (entries.length > 0) {
+              displayRegistryEntries(type, entries);
+            } else {
+              log(`No entries found in ${type} registry. Make sure the registry topic has data.`);
+            }
+          } catch (error) {
+            handleError(error, `list ${type} entries`);
+          }
+        }
+        
+        // Display registry entries in the UI
+        function displayRegistryEntries(type, entries) {
+          const output = document.getElementById('output');
+          const timestamp = new Date().toLocaleTimeString();
+          
+          let html = `<div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px;">`;
+          html += `<h3>${type.charAt(0).toUpperCase() + type.slice(1)} Registry Entries (${entries.length})</h3>`;
+          
+          entries.forEach((entry, index) => {
+            html += `<div style="background: #f5f5f5; padding: 8px; margin: 5px 0; border-radius: 3px;">`;
+            html += `<strong>#${index + 1}</strong><br/>`;
+            
+            if (type === 'action' && entry.data) {
+              // Action registrations have different fields
+              if (entry.data.hash) {
+                html += `Info Hash: <code style="font-size: 10px;">${entry.data.hash.substring(0, 16)}...</code><br/>`;
+              }
+              if (entry.data.wasm_hash) {
+                html += `WASM Hash: <code style="font-size: 10px;">${entry.data.wasm_hash.substring(0, 16)}...</code><br/>`;
+              }
+              if (entry.data.t_id) {
+                html += `WASM Topic: <code>${entry.data.t_id}</code><br/>`;
+              }
+              if (entry.data.m) {
+                html += `Message: ${entry.data.m}<br/>`;
+              }
+            } else if (type === 'assembly' && entry.data) {
+              html += `Name: <code>${entry.data.name || 'Unknown'}</code><br/>`;
+              html += `Version: ${entry.data.version || 'Unknown'}<br/>`;
+              if (entry.data.description) {
+                html += `Description: ${entry.data.description}<br/>`;
+              }
+            }
+            
+            html += `<small>ID: ${entry.id}</small>`;
+            html += `</div>`;
+          });
+          
+          html += `</div>`;
+          
+          // Prepend to output
+          output.innerHTML = html + output.innerHTML;
+        }
+        
+        // Display block entries in the UI
+        function displayBlockEntries(blocks) {
+          const output = document.getElementById('output');
+          
+          let html = `<div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px;">`;
+          html += `<h3>Assembly Blocks (${blocks.length})</h3>`;
+          
+          blocks.forEach((block, index) => {
+            html += `<div style="background: #f5f5f5; padding: 8px; margin: 5px 0; border-radius: 3px;">`;
+            html += `<strong>Block #${index + 1}</strong><br/>`;
+            html += `Topic ID: <code>${block.block_t_id}</code><br/>`;
+            
+            if (block.definition) {
+              html += `Name: ${block.definition.name}<br/>`;
+              html += `Title: ${block.definition.title}<br/>`;
+              html += `Category: ${block.definition.category}<br/>`;
+            }
+            
+            if (block.actions && Object.keys(block.actions).length > 0) {
+              html += `Actions: ${Object.entries(block.actions).map(([key, topicId]) => `${key} (${topicId})`).join(', ')}<br/>`;
+            }
+            
+            if (block.attributes && Object.keys(block.attributes).length > 0) {
+              html += `Attributes: ${JSON.stringify(block.attributes)}<br/>`;
+            }
+            
+            // Add render button for each block
+            html += `<button onclick="renderBlock('${block.block_t_id}')" style="background: #28a745; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer; margin-top: 5px;">Render Block</button>`;
+            html += `</div>`;
+          });
+          
+          html += `</div>`;
+          
+          // Prepend to output
+          output.innerHTML = html + output.innerHTML;
+        }
+        
+        // Execute WASM action
+        async function executeAction(wasmTopicId, method, params) {
+          log(`Loading WASM from topic: ${wasmTopicId}...`);
+          
+          try {
+            // In HCS-12, the WASM topic ID is passed directly
+            // Fetch WASM bytes from Kiloscribe CDN
+            const wasmUrl = `https://kiloscribe.com/api/inscription-cdn/${wasmTopicId}?network=testnet`;
+            log(`Fetching WASM from: ${wasmUrl}`);
+              
+            const wasmResponse = await fetch(wasmUrl);
+            if (!wasmResponse.ok) {
+              throw new Error(`Failed to fetch WASM: ${wasmResponse.status}`);
+            }
+            
+            const wasmBytes = await wasmResponse.arrayBuffer();
+            log(`WASM loaded: ${wasmBytes.byteLength} bytes`);
+            
+            // Instantiate the WebAssembly module
+            const wasmModule = await WebAssembly.compile(wasmBytes);
+            
+            // Create imports for the WASM module
+            const imports = {
+              env: {
+                // Add any required imports here
+                log: (ptr, len) => {
+                  console.log('[WASM]', ptr, len);
+                },
+                abort: (msg, file, line, col) => {
+                  console.error('[WASM Abort]', msg, file, line, col);
+                }
+              }
+            };
+            
+            const wasmInstance = await WebAssembly.instantiate(wasmModule, imports);
+            log('WASM instance created:', wasmInstance);
+            
+            // Get the exported functions
+            const exports = wasmInstance.exports;
+            log('WASM exports:', Object.keys(exports));
+            
+            // Call the appropriate method based on HCS-12 spec
+            let result;
+            
+            // The demo WASM just has a simple GET export
+            if (exports.GET) {
+              log('Calling WASM GET export...');
+              try {
+                // The demo WASM module is very simple and just returns undefined
+                // In a real HCS-12 WASM, it would handle the parameters properly
+                result = exports.GET();
+                
+                // Since demo WASM doesn't actually do anything, simulate a result
+                result = {
+                  success: true,
+                  action: method,
+                  params: params,
+                  timestamp: new Date().toISOString(),
+                  message: `Demo transfer of ${params.amount} HBAR to ${params.recipient}`
+                };
+                
+                log('WASM GET result:', result);
+              } catch (e) {
+                log('WASM execution error:', e);
+                // Fallback result
+                result = {
+                  success: true,
+                  demo: true,
+                  message: 'Demo WASM executed'
+                };
+              }
+            } else {
+              log('Available exports:', Object.keys(exports));
+              throw new Error(`Expected GET export not found in WASM module`);
+            }
+            
+            // Parse result if it's a string/JSON
+            if (typeof result === 'string') {
+              try {
+                result = JSON.parse(result);
+              } catch (e) {
+                // Keep as string if not JSON
+              }
+            }
+            
+            log('Action result:', result);
+            
+            // Show result in UI
+            const output = document.getElementById('output');
+            output.innerHTML = `<div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 0;">
+              <strong>✅ WASM Action Executed</strong><br/>
+              Method: ${method}<br/>
+              WASM Topic: ${wasmTopicId}<br/>
+              Result: ${JSON.stringify(result, null, 2)}
+            </div>` + output.innerHTML;
+            
+            return result;
+          } catch (error) {
+            log(`Error executing action: ${error.message}`);
+            
+            // Show error in UI
+            const output = document.getElementById('output');
+            output.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin: 10px 0;">
+              <strong>❌ Action Execution Failed</strong><br/>
+              Error: ${error.message}
+            </div>` + output.innerHTML;
+            
+            throw error;
+          }
+        }
+        
+        // Render an assembly's first block with action mappings
+        window.renderAssembly = async function(assemblyId) {
+          try {
+            log(`Loading assembly: ${assemblyId}`);
+            
+            // Load the assembly
+            const assembly = await client.loadAssembly(assemblyId);
+            if (!assembly || !assembly.state || !assembly.state.blocks || assembly.state.blocks.length === 0) {
+              throw new Error('Assembly not found or has no blocks');
+            }
+            
+            log(`Assembly loaded: ${assembly.state.name} with ${assembly.state.blocks.length} blocks`);
+            
+            // Get the first block (should be the counter block for simple assembly)
+            const assemblyBlock = assembly.state.blocks[0];
+            const blockId = assemblyBlock.block_t_id;
+            
+            log(`Rendering first block: ${blockId} with actions:`, assemblyBlock.actions);
+            
+            // Load the block definition and template
+            const blockData = await client.loadBlock(blockId);
+            if (!blockData || !blockData.definition) {
+              throw new Error('Block not found');
+            }
+            
+            const { definition, template } = blockData;
+            
+            // Create rendering components
+            const { BlockRenderer, GutenbergBridge, TemplateEngine, BlockStateManager, ResourceManager } = StandardsSDK;
+            
+            const gutenbergBridge = new GutenbergBridge(logger);
+            const resourceManager = new ResourceManager(logger, client.mirrorNode);
+            const templateEngine = new TemplateEngine(logger, resourceManager);
+            const stateManager = new BlockStateManager(logger);
+            const blockRenderer = new BlockRenderer(logger, gutenbergBridge, templateEngine, stateManager);
+            
+            // Set up action handler
+            stateManager.onBlockMessage(blockId, async (message) => {
+              if (message.type === 'action' && message.payload) {
+                const actionTopicId = message.payload.action;
+                log(`Action clicked: ${actionTopicId}`);
+                
+                try {
+                  const currentState = stateManager.getBlockState(blockId) || {
+                    attributes: { count: 0, step: 1 }
+                  };
+                  
+                  // Extract params from the button
+                  const button = renderOutput.querySelector(`[data-action="${actionTopicId}"]`);
+                  let params = {};
+                  if (button && button.dataset.params) {
+                    try {
+                      params = JSON.parse(button.dataset.params);
+                    } catch (e) {
+                      log('Failed to parse params:', e);
+                    }
+                  }
+                  
+                  log('Action params:', params);
+                  
+                  // Simulate action execution based on operation
+                  let newCount = currentState.attributes.count || 0;
+                  const step = currentState.attributes.step || 1;
+                  
+                  if (params.operation === 'increment') {
+                    newCount += step;
+                  } else if (params.operation === 'decrement') {
+                    newCount -= step;
+                  } else if (params.operation === 'reset') {
+                    newCount = 0;
+                  }
+                  
+                  // Update state
+                  const newState = {
+                    ...currentState,
+                    attributes: {
+                      ...currentState.attributes,
+                      count: newCount
+                    },
+                    actionResults: {
+                      [params.operation]: { value: newCount }
+                    }
+                  };
+                  
+                  stateManager.updateBlockState(blockId, newState);
+                  log('State updated:', newState);
+                  
+                } catch (error) {
+                  log('Action execution failed:', error);
+                }
+              }
+            });
+            
+            // Show render section
+            document.getElementById('render-section').style.display = 'block';
+            const renderOutput = document.getElementById('render-output');
+            
+            // Create block definition for renderer
+            const blockDef = {
+              id: blockId,
+              template: template,
+              attributes: definition.attributes || {},
+              styles: '',
+              p: 'hcs-12',
+              op: 'register',
+              name: definition.name,
+              version: definition.version || '1.0.0',
+              title: definition.title,
+              description: definition.description
+            };
+            
+            // Process template to remove placeholder stylesheet and extract inline styles
+            let processedTemplate = template;
+            processedTemplate = processedTemplate.replace(
+              /<link[^>]*data-src="hcs:\/\/1\/0\.0\.STYLES_TOPIC"[^>]*>/gi,
+              ''
+            );
+            
+            // Extract styles from template if present
+            const styleMatch = processedTemplate.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+            if (styleMatch) {
+              blockDef.styles = styleMatch[1];
+              processedTemplate = processedTemplate.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+            }
+            
+            blockDef.template = processedTemplate;
+            
+            try {
+              // Render the block with assembly context (includes action mappings)
+              const renderResult = await blockRenderer.render(blockDef, {
+                container: renderOutput,
+                initialState: {
+                  attributes: {
+                    count: assemblyBlock.attributes?.count || 0,
+                    step: assemblyBlock.attributes?.step || 1
+                  },
+                  actionResults: {}
+                },
+                assembly: assembly,  // Pass the assembly context!
+                actionRegistry: client.actionRegistry,
+                network: 'testnet',
+                blockLoader: client.blockLoader || client,
+                hrlResolver: client.hrlResolver || null,
+                maxDepth: 5
+              });
+              
+              log('Block rendered successfully', { blockId, hasElement: !!renderResult.element });
+              
+              // Add info header
+              const header = document.createElement('div');
+              header.style.cssText = 'border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;';
+              header.innerHTML = `
+                <h3 style="margin: 0;">${definition.title || definition.name || 'Untitled Block'}</h3>
+                <small style="color: #666;">From Assembly: ${assembly.state.name}</small>
+                <small style="color: #999;"> | Actions: ${Object.keys(assemblyBlock.actions || {}).join(', ')}</small>
+              `;
+              renderOutput.insertBefore(header, renderOutput.firstChild);
+              
+            } catch (renderError) {
+              log('Block rendering failed:', renderError);
+              renderOutput.innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px;">
+                  <strong>Rendering Error:</strong> ${renderError.message}
+                </div>
+                <div style="margin-top: 10px;">
+                  <h4>Template Source:</h4>
+                  <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">${template.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                </div>
+              `;
+            }
+            
+            // Add footer with assembly info
+            const footer = document.createElement('div');
+            footer.style.cssText = 'border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 12px; color: #666;';
+            footer.innerHTML = `
+              <strong>Assembly Topic:</strong> ${assemblyId}<br/>
+              <strong>Block Definition Topic:</strong> ${blockId}<br/>
+              <strong>Template Topic:</strong> ${definition.template_t_id}
+            `;
+            renderOutput.appendChild(footer);
+            
+            updateStatus('client-status', 'Assembly block rendered successfully', 'success');
+            renderOutput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+          } catch (error) {
+            handleError(error, 'assembly rendering');
+          }
+        }
+        
+        // Render nested assembly (render the container block with nested blocks)
+        window.renderNestedAssembly = async function(assemblyId) {
+          try {
+            log(`Loading nested assembly: ${assemblyId}`);
+            
+            // Load the assembly
+            const assembly = await client.loadAssembly(assemblyId);
+            if (!assembly || !assembly.state || !assembly.state.blocks || assembly.state.blocks.length === 0) {
+              throw new Error('Assembly not found or has no blocks');
+            }
+            
+            log(`Assembly loaded: ${assembly.state.name} with ${assembly.state.blocks.length} blocks`);
+            
+            // Find the container block (should be the last one added)
+            const containerBlock = assembly.state.blocks.find(block => 
+              block.definition?.name?.includes('container') ||
+              block.definition?.title?.includes('Container')
+            ) || assembly.state.blocks[assembly.state.blocks.length - 1];
+            
+            const blockId = containerBlock.block_t_id;
+            
+            log(`Rendering container block: ${blockId} with actions:`, containerBlock.actions);
+            
+            // Load the block definition and template
+            const blockData = await client.loadBlock(blockId);
+            if (!blockData || !blockData.definition) {
+              throw new Error('Container block not found');
+            }
+            
+            const { definition, template } = blockData;
+            
+            // Create rendering components
+            const { BlockRenderer, GutenbergBridge, TemplateEngine, BlockStateManager, ResourceManager } = StandardsSDK;
+            
+            const gutenbergBridge = new GutenbergBridge(logger);
+            const resourceManager = new ResourceManager(logger, client.mirrorNode);
+            const templateEngine = new TemplateEngine(logger, resourceManager);
+            const stateManager = new BlockStateManager(logger);
+            const blockRenderer = new BlockRenderer(logger, gutenbergBridge, templateEngine, stateManager);
+            
+            // Set up action handler for container block
+            stateManager.onBlockMessage(blockId, async (message) => {
+              if (message.type === 'action' && message.payload) {
+                const actionTopicId = message.payload.action;
+                log(`Container action clicked: ${actionTopicId}`);
+                
+                try {
+                  const currentState = stateManager.getBlockState(blockId) || {
+                    attributes: containerBlock.attributes || {}
+                  };
+                  
+                  // Extract params from the button
+                  const button = renderOutput.querySelector(`[data-action="${actionTopicId}"]`);
+                  let params = {};
+                  if (button && button.dataset.params) {
+                    try {
+                      params = JSON.parse(button.dataset.params);
+                    } catch (e) {
+                      log('Failed to parse params:', e);
+                    }
+                  }
+                  
+                  log('Container action params:', params);
+                  
+                  // Handle container block actions (toggle functionality)
+                  const newState = { ...currentState };
+                  
+                  if (params.operation === 'toggleCounter') {
+                    newState.attributes.showCounter = !newState.attributes.showCounter;
+                  } else if (params.operation === 'toggleStats') {
+                    newState.attributes.showStats = !newState.attributes.showStats;
+                  }
+                  
+                  stateManager.updateBlockState(blockId, newState);
+                  log('Container state updated:', newState);
+                  
+                } catch (error) {
+                  log('Container action execution failed:', error);
+                }
+              }
+            });
+            
+            // Show render section
+            document.getElementById('render-section').style.display = 'block';
+            const renderOutput = document.getElementById('render-output');
+            
+            // Create block definition for renderer
+            const blockDef = {
+              id: blockId,
+              template: template,
+              attributes: definition.attributes || {},
+              styles: '',
+              p: 'hcs-12',
+              op: 'register',
+              name: definition.name,
+              version: definition.version || '1.0.0',
+              title: definition.title,
+              description: definition.description
+            };
+            
+            // Process template to remove placeholder stylesheet and extract inline styles
+            let processedTemplate = template;
+            processedTemplate = processedTemplate.replace(
+              /<link[^>]*data-src="hcs:\/\/1\/0\.0\.STYLES_TOPIC"[^>]*>/gi,
+              ''
+            );
+            
+            // Extract styles from template if present
+            const styleMatch = processedTemplate.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+            if (styleMatch) {
+              blockDef.styles = styleMatch[1];
+              processedTemplate = processedTemplate.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+            }
+            
+            blockDef.template = processedTemplate;
+            
+            try {
+              // Render the container block with assembly context (includes action mappings and nested blocks)
+              const renderResult = await blockRenderer.render(blockDef, {
+                container: renderOutput,
+                initialState: {
+                  attributes: containerBlock.attributes || {},
+                  actionResults: {}
+                },
+                assembly: assembly,  // Pass the assembly context for nested blocks!
+                actionRegistry: client.actionRegistry,
+                network: 'testnet',
+                blockLoader: client.blockLoader || client,
+                hrlResolver: client.hrlResolver || null,
+                maxDepth: 5
+              });
+              
+              log('Container block rendered successfully', { blockId, hasElement: !!renderResult.element });
+              
+              // Add info header
+              const header = document.createElement('div');
+              header.style.cssText = 'border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;';
+              header.innerHTML = `
+                <h3 style="margin: 0;">${definition.title || definition.name || 'Untitled Block'}</h3>
+                <small style="color: #666;">From Assembly: ${assembly.state.name}</small>
+                <small style="color: #999;"> | Nested Blocks Demo</small>
+              `;
+              renderOutput.insertBefore(header, renderOutput.firstChild);
+              
+            } catch (renderError) {
+              log('Container block rendering failed:', renderError);
+              renderOutput.innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px;">
+                  <strong>Rendering Error:</strong> ${renderError.message}
+                </div>
+                <div style="margin-top: 10px;">
+                  <h4>Template Source:</h4>
+                  <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">${template.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                </div>
+              `;
+            }
+            
+            // Add footer with assembly info
+            const footer = document.createElement('div');
+            footer.style.cssText = 'border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 12px; color: #666;';
+            footer.innerHTML = `
+              <strong>Assembly Topic:</strong> ${assemblyId}<br/>
+              <strong>Container Block Topic:</strong> ${blockId}<br/>
+              <strong>Template Topic:</strong> ${definition.template_t_id}<br/>
+              <strong>Total Blocks in Assembly:</strong> ${assembly.state.blocks.length}
+            `;
+            renderOutput.appendChild(footer);
+            
+            updateStatus('client-status', 'Nested assembly rendered successfully', 'success');
+            renderOutput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+          } catch (error) {
+            handleError(error, 'nested assembly rendering');
+          }
+        }
+        
+        // Render a block
+        window.renderBlock = async function(blockId) {
+          try {
+            log(`Rendering block: ${blockId}`);
+            
+            // Load the block from HCS-1 using BlockLoader
+            const blockData = await client.loadBlock(blockId);
+            if (!blockData || !blockData.definition) {
+              throw new Error('Block not found');
+            }
+            
+            const { definition, template } = blockData;
+            
+            // Create rendering components
+            const { BlockRenderer, GutenbergBridge, TemplateEngine, BlockStateManager, ResourceManager } = StandardsSDK;
+            
+            const gutenbergBridge = new GutenbergBridge(logger);
+            const resourceManager = new ResourceManager(logger, client.mirrorNode);
+            const templateEngine = new TemplateEngine(logger, resourceManager);
+            const stateManager = new BlockStateManager(logger);
+            const blockRenderer = new BlockRenderer(logger, gutenbergBridge, templateEngine, stateManager);
+            
+            // Set up action handler for the demo
+            // In a real app, this would be handled by a proper WASM runtime
+            stateManager.onBlockMessage(blockId, async (message) => {
+              if (message.type === 'action' && message.payload) {
+                const actionTopicId = message.payload.action;
+                log(`Action clicked: ${actionTopicId}`);
+                
+                try {
+                  // For the demo, we'll simulate the action execution
+                  // In a real implementation, you would:
+                  // 1. Look up the action in the action registry
+                  // 2. Load and execute the WASM module
+                  // 3. Update the state with the result
+                  
+                  const currentState = stateManager.getBlockState(blockId) || {
+                    attributes: { count: 0, step: 1 }
+                  };
+                  
+                  // Extract params from the button
+                  const button = renderOutput.querySelector(`[data-action="${actionTopicId}"]`);
+                  let params = {};
+                  if (button && button.dataset.params) {
+                    try {
+                      params = JSON.parse(button.dataset.params);
+                    } catch (e) {
+                      log('Failed to parse params:', e);
+                    }
+                  }
+                  
+                  log('Action params:', params);
+                  
+                  // Simulate action execution based on operation
+                  let newCount = currentState.attributes.count || 0;
+                  const step = currentState.attributes.step || 1;
+                  
+                  if (params.operation === 'increment') {
+                    newCount += step;
+                  } else if (params.operation === 'decrement') {
+                    newCount -= step;
+                  } else if (params.operation === 'reset') {
+                    newCount = 0;
+                  }
+                  
+                  // Update state
+                  const newState = {
+                    ...currentState,
+                    attributes: {
+                      ...currentState.attributes,
+                      count: newCount
+                    },
+                    actionResults: {
+                      [params.operation]: { value: newCount }
+                    }
+                  };
+                  
+                  stateManager.updateBlockState(blockId, newState);
+                  
+                  log('State updated:', newState);
+                  
+                  // Note: In a real implementation, you would execute the WASM here
+                  // For now, this is just a simulation to demonstrate the UI flow
+                  
+                } catch (error) {
+                  log('Action execution failed:', error);
+                }
+              }
+            });
+            
+            // Show render section
+            document.getElementById('render-section').style.display = 'block';
+            const renderOutput = document.getElementById('render-output');
+            
+            // Create block definition for renderer
+            const blockDef = {
+              id: blockId,
+              template: template,
+              attributes: definition.attributes || {},
+              styles: '', // Extract styles from template if needed
+              p: 'hcs-12',
+              op: 'register',
+              name: definition.name,
+              version: definition.version || '1.0.0',
+              title: definition.title,
+              description: definition.description
+            };
+            
+            // Process template to remove placeholder stylesheet and extract inline styles
+            let processedTemplate = template;
+            
+            // Remove the placeholder stylesheet link
+            processedTemplate = processedTemplate.replace(
+              /<link[^>]*data-src="hcs:\/\/1\/0\.0\.STYLES_TOPIC"[^>]*>/gi,
+              ''
+            );
+            
+            // Extract styles from template if present
+            const styleMatch = processedTemplate.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+            if (styleMatch) {
+              blockDef.styles = styleMatch[1];
+              // Remove the style tag from template since BlockRenderer will handle it
+              processedTemplate = processedTemplate.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+            }
+            
+            blockDef.template = processedTemplate;
+            
+            try {
+              // Load the assembly to get action mappings (optional)
+              let assembly = null;
+              try {
+                // First sync registries to ensure we have the latest data
+                if (client.actionRegistry) {
+                  log('Syncing action registry...');
+                  await client.actionRegistry.sync();
+                }
+                
+                if (client.assemblyRegistry) {
+                  log('Syncing assembly registry...');
+                  await client.assemblyRegistry.sync();
+                }
+                
+                // Optionally load an assembly, but blocks can render without it
+                // Skip this for individual block rendering
+                log('Rendering block without assembly context (actions will still work via registry)');
+              } catch (e) {
+                log('Registry sync warning:', e.message);
+                // Continue - blocks can still render
+              }
+              
+              // Render the block using BlockRenderer with WASM support
+              const renderResult = await blockRenderer.render(blockDef, {
+                container: renderOutput,
+                initialState: {
+                  attributes: {
+                    count: definition.attributes?.count || 0,
+                    step: definition.attributes?.step || 1
+                  },
+                  actionResults: {}
+                },
+                assembly: assembly,
+                actionRegistry: client.actionRegistry,
+                network: 'testnet',
+                blockLoader: client.blockLoader || client,
+                hrlResolver: client.hrlResolver || null,
+                maxDepth: 5
+              });
+              
+              log('Block rendered successfully', { blockId, hasElement: !!renderResult.element });
+              
+              // Add info header
+              const header = document.createElement('div');
+              header.style.cssText = 'border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;';
+              header.innerHTML = `
+                <h3 style="margin: 0;">${definition.title || definition.name || 'Untitled Block'}</h3>
+                <small style="color: #666;">Category: ${definition.category || 'uncategorized'}</small>
+                <small style="color: #999;"> | Attributes: ${Object.keys(definition.attributes || {}).join(', ')}</small>
+              `;
+              renderOutput.insertBefore(header, renderOutput.firstChild);
+              
+            } catch (renderError) {
+              log('Block rendering failed:', renderError);
+              renderOutput.innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px;">
+                  <strong>Rendering Error:</strong> ${renderError.message}
+                </div>
+                <div style="margin-top: 10px;">
+                  <h4>Template Source:</h4>
+                  <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">${template.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+                </div>
+              `;
+            }
+            
+            // Add footer with block info
+            const footer = document.createElement('div');
+            footer.style.cssText = 'border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 12px; color: #666;';
+            footer.innerHTML = `
+              <strong>Block Definition Topic:</strong> ${blockId}<br/>
+              <strong>Template Topic:</strong> ${definition.template_t_id}<br/>
+              <strong>API Version:</strong> ${definition.apiVersion || '3'}
+            `;
+            renderOutput.appendChild(footer);
+            
+            updateStatus('client-status', 'Block rendered successfully', 'success');
+            
+            // Scroll to render section
+            renderOutput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+          } catch (error) {
+            handleError(error, 'block rendering');
+          }
+        }
+
+        // Get topic messages
+        document
+          .getElementById('get-messages-btn')
+          .addEventListener('click', async () => {
+            try {
+              if (!client) {
+                throw new Error('Client not initialized');
+              }
+
+              const topicId = document.getElementById('mirror-topic-id').value;
+              if (!topicId) {
+                throw new Error('Please enter a topic ID');
+              }
+
+              const messages = await client.mirrorNode.getTopicMessagesByFilter(
+                topicId,
+                {
+                  order: 'desc',
+                  limit: 10,
+                },
+              );
+
+              log(
+                `Retrieved ${messages.length} messages from topic ${topicId}`,
+                messages,
+              );
+            } catch (error) {
+              handleError(error, 'get topic messages');
+            }
+          });
+
+        // Get topic info
+        document
+          .getElementById('get-info-btn')
+          .addEventListener('click', async () => {
+            try {
+              if (!client) {
+                throw new Error('Client not initialized');
+              }
+
+              const topicId = document.getElementById('mirror-topic-id').value;
+              if (!topicId) {
+                throw new Error('Please enter a topic ID');
+              }
+
+              const topicInfo = await client.mirrorNode.getTopicInfo(topicId);
+              log(`Topic ${topicId} information`, topicInfo);
+            } catch (error) {
+              handleError(error, 'get topic info');
+            }
+          });
+
+        // Create registry topic
+        async function createRegistryTopic(type) {
+          try {
+            if (!client) {
+              throw new Error('Client not initialized');
+            }
+
+            const registryTypeMap = {
+              action: RegistryType.ACTION,
+              block: RegistryType.BLOCK,
+              assembly: RegistryType.ASSEMBLY,
+            };
+
+            const topicId = await client.createRegistryTopic(
+              registryTypeMap[type],
+            );
+            log(`${type} registry topic created`, { topicId });
+
+            // Auto-populate the topic ID field
+            document.getElementById('topic-id').value = topicId;
+          } catch (error) {
+            handleError(error, `create ${type} registry topic`);
+          }
+        }
+
+        // Registry operations
+        document
+          .getElementById('sync-action-btn')
+          .addEventListener('click', () => syncRegistry('action'));
+        document
+          .getElementById('sync-assembly-btn')
+          .addEventListener('click', () => syncRegistry('assembly'));
+
+        document
+          .getElementById('list-actions-btn')
+          .addEventListener('click', () => listEntries('action'));
+        document
+          .getElementById('list-assemblies-btn')
+          .addEventListener('click', () => listEntries('assembly'));
+        document
+          .getElementById('list-blocks-btn')
+          .addEventListener('click', () => listEntries('block'));
+        
+        // Load assembly details
+        document
+          .getElementById('load-assembly-btn')
+          .addEventListener('click', async () => {
+            try {
+              const topicId = document.getElementById('topic-id').value;
+              if (!topicId) {
+                throw new Error('Please enter an assembly topic ID');
+              }
+              
+              const assembly = await client.loadAssembly(topicId);
+              log('Loaded assembly details', {
+                topicId: assembly.topicId,
+                state: assembly.state,
+                blocks: assembly.blocks.map(b => ({
+                  block_t_id: b.block_t_id,
+                  hasDefinition: !!b.definition,
+                  hasTemplate: !!b.template,
+                  actions: b.actions ? Object.keys(b.actions) : []
+                }))
+              });
+              
+              // Show render section with assembly blocks
+              if (assembly.blocks.length > 0) {
+                document.getElementById('render-section').style.display = 'block';
+                const renderOutput = document.getElementById('render-output');
+                
+                let html = '<h3>Assembly Blocks</h3>';
+                assembly.blocks.forEach((block, index) => {
+                  html += `<div style="background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px;">`;
+                  html += `<strong>Block #${index + 1}</strong><br/>`;
+                  html += `Topic ID: <code>${block.block_t_id}</code><br/>`;
+                  if (block.definition) {
+                    html += `Name: ${block.definition.name}<br/>`;
+                    html += `Title: ${block.definition.title}<br/>`;
+                  }
+                  if (block.actions) {
+                    html += `Actions: ${Object.entries(block.actions).map(([key, topicId]) => `${key} (${topicId})`).join(', ')}<br/>`;
+                  }
+                  html += `</div>`;
+                });
+                
+                renderOutput.innerHTML = html;
+              }
+            } catch (error) {
+              handleError(error, 'load assembly');
+            }
+          });
+
+        // Render individual block
+        document
+          .getElementById('render-block-btn')
+          .addEventListener('click', async () => {
+            try {
+              const blockId = document.getElementById('topic-id').value;
+              if (!blockId) {
+                throw new Error('Please enter a block definition topic ID');
+              }
+              
+              log(`Rendering block: ${blockId}`);
+              await window.renderBlock(blockId);
+              
+            } catch (error) {
+              handleError(error, 'render block');
+            }
+          });
+
+        // Create topics
+        document
+          .getElementById('create-action-topic-btn')
+          .addEventListener('click', () => createRegistryTopic('action'));
+        document
+          .getElementById('create-assembly-topic-btn')
+          .addEventListener('click', () => createRegistryTopic('assembly'));
+        
+        // Create new assembly instance
+        document
+          .getElementById('create-assembly-instance-btn')
+          .addEventListener('click', async () => {
+            try {
+              if (!client) {
+                throw new Error('Client not initialized');
+              }
+              
+              const topicId = await client.createAssemblyTopic();
+              log('Created new assembly topic', { topicId });
+              
+              // Auto-populate the topic ID field
+              document.getElementById('topic-id').value = topicId;
+            } catch (error) {
+              handleError(error, 'create assembly topic');
+            }
+          });
+          
+        // Show nested blocks demo instructions
+        window.showNestedBlocksDemo = function() {
+          document.getElementById('nested-demo-section').style.display = 'block';
+          document.getElementById('nested-demo-section').scrollIntoView({ behavior: 'smooth' });
+        };
+        
+        // Demo button event listeners
+        if (document.getElementById('demo-simple-counter')) {
+          document.getElementById('demo-simple-counter').addEventListener('click', () => runDemo('simple-counter'));
+          document.getElementById('demo-nested-blocks').addEventListener('click', () => runDemo('nested-blocks'));
+          document.getElementById('demo-full-assembly').addEventListener('click', () => runDemo('full-assembly'));
+        }
+      };
+    </script>
+
+    <!-- HCS Recursion SDK -->
+    <script id="hcs-sdk">
+      !(function (t, e) {
+        'object' == typeof exports && 'undefined' != typeof module
+          ? e(exports)
+          : 'function' == typeof define && define.amd
+            ? define(['exports'], e)
+            : e(
+                ((t =
+                  'undefined' != typeof globalThis
+                    ? globalThis
+                    : t || self).HCSRecusionSDK = {}),
+              );
+      })(this, function (t) {
+        'use strict';
+        class e {
+          constructor() {
+            (this.modelViewerLoaded = !1),
+              (this.modelViewerLoading = null),
+              (this.config = {
+                cdnUrl: 'https://kiloscribe.com/api/inscription-cdn/',
+                network: 'mainnet',
+                retryAttempts: 3,
+                retryBackoff: 300,
+                debug: !1,
+                showLoadingIndicator: !1,
+                loadingCallbackName: null,
+              }),
+              (this.configMapping = {
+                hcsCdnUrl: 'cdnUrl',
+                hcsNetwork: 'network',
+                hcsRetryAttempts: 'retryAttempts',
+                hcsRetryBackoff: 'retryBackoff',
+                hcsDebug: 'debug',
+                hcsShowLoadingIndicator: 'showLoadingIndicator',
+                hcsLoadingCallbackName: 'loadingCallbackName',
+              }),
+              (this.LoadedScripts = {}),
+              (this.LoadedWasm = {}),
+              (this.LoadedImages = {}),
+              (this.LoadedVideos = {}),
+              (this.LoadedAudios = {}),
+              (this.LoadedAudioUrls = {}),
+              (this.LoadedGLBs = {}),
+              (this.scriptLoadedEvent = new Event('HCSScriptLoaded')),
+              (this.loadQueue = []),
+              (this.isProcessingQueue = !1);
+          }
+          log(...t) {
+            this.config.debug && console.log('[HCS SDK]', ...t);
+          }
+          error(...t) {
+            console.error('[HCS SDK]', ...t);
+          }
+          loadConfigFromHTML() {
+            const t = document.querySelector('script[data-hcs-config]');
+            t &&
+              Object.keys(this.configMapping).forEach(e => {
+                if (t.dataset[e]) {
+                  const i = this.configMapping[e];
+                  let a = t.dataset[e];
+                  'true' === a && (a = !0),
+                    'false' === a && (a = !1),
+                    isNaN(Number(a)) || '' === a || (a = Number(a)),
+                    (this.config[i] = a);
+                }
+              }),
+              this.log('Loaded config:', this.config);
+          }
+          updateLoadingStatus(t, e) {
+            if (
+              'loaded' !== this.LoadedScripts[t] &&
+              (this.config.showLoadingIndicator &&
+                console.log('[HCS Loading] ' + t + ' : ' + e),
+              (this.LoadedScripts[t] = e),
+              this.config.loadingCallbackName &&
+                'function' == typeof window[this.config.loadingCallbackName])
+            ) {
+              const i = window[this.config.loadingCallbackName];
+              'function' == typeof i && i(t, e);
+            }
+          }
+          async fetchWithRetry(
+            t,
+            e = this.config.retryAttempts,
+            i = this.config.retryBackoff,
+          ) {
+            try {
+              const e = await fetch(t);
+              if (!e.ok) throw new Error('HTTP error! status: ' + e.status);
+              return e;
+            } catch (a) {
+              if (e > 0)
+                return (
+                  this.log(
+                    'Retrying fetch for ' + t + ' Attempts left: ' + (e - 1),
+                  ),
+                  await this.sleep(i),
+                  this.fetchWithRetry(t, e - 1, 2 * i)
+                );
+              throw a;
+            }
+          }
+          sleep(t) {
+            return new Promise(e => setTimeout(e, t));
+          }
+          isDuplicate(t) {
+            return !!this.LoadedScripts[t];
+          }
+          async retrieveHCS1Data(
+            t,
+            e = this.config.cdnUrl,
+            i = this.config.network,
+          ) {
+            const a = i.replace(/['"]+/g, ''),
+              s = await this.fetchWithRetry(e + t + '?network=' + a);
+            return await s.blob();
+          }
+          async loadScript(t) {
+            const e = t.getAttribute('data-src'),
+              i = t.getAttribute('data-script-id'),
+              a = null == e ? void 0 : e.split('/').pop(),
+              s = t.getAttribute('type'),
+              o = t.hasAttribute('data-required'),
+              d = 'module' === t.getAttribute('type');
+            if (!this.isDuplicate(a || '')) {
+              this.updateLoadingStatus(i, 'loading');
+              try {
+                const e = t.getAttribute('data-cdn-url') || this.config.cdnUrl,
+                  r = t.getAttribute('data-network') || this.config.network,
+                  c = await this.retrieveHCS1Data(a, e, r);
+                if ('wasm' === s) {
+                  const e = await c.arrayBuffer(),
+                    a = await WebAssembly.compile(e);
+                  (this.LoadedWasm[i] = await WebAssembly.instantiate(a, {
+                    env: {},
+                    ...t.dataset,
+                  })),
+                    this.updateLoadingStatus(i, 'loaded'),
+                    window.dispatchEvent(this.scriptLoadedEvent),
+                    this.log('Loaded wasm: ' + i);
+                } else {
+                  const t = await c.text(),
+                    e = document.createElement('script');
+                  if (
+                    ((e.textContent = t),
+                    (e.className = 'hcs-inline-script'),
+                    i && e.setAttribute('data-loaded-script-id', i),
+                    d)
+                  ) {
+                    e.type = 'module';
+                    const i = new Blob([t], { type: 'application/javascript' });
+                    e.src = URL.createObjectURL(i);
+                  }
+                  document.body.appendChild(e),
+                    this.updateLoadingStatus(i, 'loaded'),
+                    window.dispatchEvent(this.scriptLoadedEvent),
+                    this.log('Loaded script: ' + i),
+                    (e.onerror = t => {
+                      if (
+                        (this.error('Failed to load ' + s + ': ' + i, t),
+                        this.updateLoadingStatus(i, 'failed'),
+                        o)
+                      )
+                        throw t;
+                    });
+                }
+              } catch (r) {
+                if (
+                  (this.error('Failed to load ' + s + ': ' + i, r),
+                  this.updateLoadingStatus(i, 'failed'),
+                  o)
+                )
+                  throw r;
+              }
+            }
+          }
+          async loadModuleExports(t) {
+            const e = document.querySelector(
+              'script[data-loaded-script-id="' + t + '"]',
+            );
+            if (!e)
+              throw new Error('Module script with id ' + t + ' not found');
+            const i = e.getAttribute('src');
+            if (!i)
+              throw new Error('Module script ' + t + ' has no src attribute');
+            return await import(i);
+          }
+          async loadStylesheet(t) {
+            const e = t.getAttribute('data-src'),
+              i = t.getAttribute('data-script-id'),
+              a = null == e ? void 0 : e.split('/').pop(),
+              s = t.hasAttribute('data-required');
+            if (!this.isDuplicate(a || '')) {
+              this.updateLoadingStatus(i, 'loading');
+              try {
+                const e = t.getAttribute('data-cdn-url') || this.config.cdnUrl,
+                  s = t.getAttribute('data-network') || this.config.network,
+                  o = await this.retrieveHCS1Data(a, e, s),
+                  d = await o.text(),
+                  r = document.createElement('style');
+                (r.textContent = d),
+                  document.head.appendChild(r),
+                  this.updateLoadingStatus(i, 'loaded'),
+                  window.dispatchEvent(this.scriptLoadedEvent),
+                  this.log('Loaded and inlined stylesheet: ' + i);
+              } catch (o) {
+                if (
+                  (this.error('Failed to load stylesheet: ' + i, o),
+                  this.updateLoadingStatus(i, 'failed'),
+                  s)
+                )
+                  throw o;
+              }
+            }
+          }
+          async loadImage(t) {
+            const e = t.getAttribute('data-src'),
+              i = null == e ? void 0 : e.split('/').pop();
+            this.log('Loading image: ' + i),
+              this.updateLoadingStatus('Image: ' + i, 'loaded');
+            try {
+              const e = t.getAttribute('data-cdn-url') || this.config.cdnUrl,
+                a = t.getAttribute('data-network') || this.config.network,
+                s = await this.retrieveHCS1Data(i, e, a),
+                o = URL.createObjectURL(s);
+              (t.src = o),
+                (this.LoadedImages[i] = o),
+                this.updateLoadingStatus('Image: ' + i, 'loaded'),
+                this.log('Loaded image: ' + i);
+            } catch (a) {
+              this.error('Failed to load image: ' + i, a),
+                this.updateLoadingStatus('Image: ' + i, 'failed');
+            }
+          }
+          async loadMedia(t, e) {
+            const i = t.getAttribute('data-src'),
+              a = null == i ? void 0 : i.split('/').pop();
+            this.log('Loading ' + e + ': ' + a),
+              this.updateLoadingStatus(e + ': ' + a, 'loading');
+            try {
+              const i = t.getAttribute('data-cdn-url') || this.config.cdnUrl,
+                s = t.getAttribute('data-network') || this.config.network,
+                o = await this.retrieveHCS1Data(a, i, s),
+                d = URL.createObjectURL(o);
+              (t.src = d),
+                'video' === e
+                  ? (this.LoadedVideos[a] = d)
+                  : (this.LoadedAudioUrls[a] = d),
+                this.updateLoadingStatus(e + ': ' + a, 'loaded'),
+                this.log('Loaded ' + e + ': ' + a);
+            } catch (s) {
+              this.error('Failed to load ' + e + ': ' + a, s),
+                this.updateLoadingStatus(e + ': ' + a, 'failed');
+            }
+          }
+          async loadModelViewer() {
+            return this.modelViewerLoading
+              ? this.modelViewerLoading
+              : this.modelViewerLoaded
+                ? Promise.resolve()
+                : ((this.modelViewerLoading = new Promise(t => {
+                    const e = document.createElement('script');
+                    e.setAttribute('data-src', 'hcs://1/0.0.7293044'),
+                      e.setAttribute('data-script-id', 'model-viewer'),
+                      e.setAttribute('type', 'module'),
+                      window.addEventListener(
+                        'HCSScriptLoaded',
+                        () => {
+                          (this.modelViewerLoaded = !0), t();
+                        },
+                        { once: !0 },
+                      ),
+                      this.loadScript(e);
+                  })),
+                  this.modelViewerLoading);
+          }
+          async loadGLB(t) {
+            var e;
+            await this.loadModelViewer();
+            const i = t.getAttribute('data-src'),
+              a = null == i ? void 0 : i.split('/').pop();
+            this.log('Loading GLB: ' + a),
+              this.updateLoadingStatus('GLB: ' + a, 'loading');
+            try {
+              const i = t.getAttribute('data-cdn-url') || this.config.cdnUrl,
+                s = t.getAttribute('data-network') || this.config.network;
+              let o;
+              'model-viewer' !== t.tagName.toLowerCase()
+                ? ((o = document.createElement('model-viewer')),
+                  Array.from(t.attributes).forEach(t => {
+                    o.setAttribute(t.name, t.value);
+                  }),
+                  o.setAttribute('camera-controls', ''),
+                  o.setAttribute('auto-rotate', ''),
+                  o.setAttribute('ar', ''),
+                  null == (e = t.parentNode) || e.replaceChild(o, t))
+                : (o = t);
+              const d = await this.retrieveHCS1Data(a, i, s),
+                r = URL.createObjectURL(d);
+              o.setAttribute('src', r),
+                (this.LoadedGLBs[a] = r),
+                this.updateLoadingStatus('GLB: ' + a, 'loaded'),
+                this.log('Loaded GLB: ' + a);
+            } catch (s) {
+              this.error('Failed to load GLB: ' + a, s),
+                this.updateLoadingStatus('GLB: ' + a, 'failed');
+            }
+          }
+          async loadResource(t, e, i) {
+            return new Promise(a => {
+              this.loadQueue.push({
+                element: t,
+                type: e,
+                order: i,
+                resolve: a,
+              }),
+                this.processQueue();
+            });
+          }
+          async processQueue() {
+            if (!this.isProcessingQueue) {
+              for (this.isProcessingQueue = !0; this.loadQueue.length > 0; ) {
+                const e = this.loadQueue.shift();
+                try {
+                  'script' === e.type
+                    ? await this.loadScript(e.element)
+                    : 'image' === e.type
+                      ? await this.loadImage(e.element)
+                      : 'video' === e.type || 'audio' === e.type
+                        ? await this.loadMedia(e.element, e.type)
+                        : 'glb' === e.type
+                          ? await this.loadGLB(e.element)
+                          : 'css' === e.type &&
+                            (await this.loadStylesheet(e.element)),
+                    e.resolve();
+                } catch (t) {
+                  if (
+                    (this.error('Error processing queue item:', t),
+                    'script' === e.type &&
+                      e.element.hasAttribute('data-required'))
+                  )
+                    break;
+                }
+              }
+              this.isProcessingQueue = !1;
+            }
+          }
+          async replaceHCSInStyle(t) {
+            let e = t,
+              i = e.indexOf('hcs://');
+            for (; -1 !== i; ) {
+              let t = i;
+              for (; t < e.length && !["'", '"', ' ', ')'].includes(e[t]); )
+                t++;
+              const s = e.substring(i, t),
+                o = s.split('/').pop();
+              try {
+                const a = this.config.cdnUrl,
+                  d = this.config.network,
+                  r = await this.retrieveHCS1Data(o, a, d),
+                  c = URL.createObjectURL(r);
+                (e = e.substring(0, i) + c + e.substring(t)),
+                  (this.LoadedImages[o] = c),
+                  this.log('Replaced CSS HCS URL: ' + s + ' with ' + c);
+              } catch (a) {
+                this.error('Failed to load CSS image: ' + o, a);
+              }
+              i = e.indexOf('hcs://', i + 1);
+            }
+            return e;
+          }
+          async processInlineStyles() {
+            var t;
+            const e = document.querySelectorAll('[style*="hcs://"]');
+            this.log(
+              'Found ' + e.length + ' elements with HCS style references',
+            );
+            for (const a of Array.from(e)) {
+              const t = a.getAttribute('style');
+              if (t) {
+                this.log('Processing style: ' + t);
+                const e = await this.replaceHCSInStyle(t);
+                t !== e &&
+                  (a.setAttribute('style', e),
+                  this.log('Updated style to: ' + e));
+              }
+            }
+            const i = document.querySelectorAll('style');
+            for (const a of Array.from(i))
+              if (null == (t = a.textContent) ? void 0 : t.includes('hcs://')) {
+                const t = await this.replaceHCSInStyle(a.textContent);
+                a.textContent !== t && (a.textContent = t);
+              }
+          }
+          async init() {
+            return (
+              this.loadConfigFromHTML(),
+              new Promise(t => {
+                const e = async () => {
+                  const e = document.querySelectorAll(
+                      'script[data-src^="hcs://"]',
+                    ),
+                    i = document.querySelectorAll(
+                      'img[data-src^="hcs://"], img[src^="hcs://"]',
+                    ),
+                    a = document.querySelectorAll(
+                      'video[data-src^="hcs://"], video[src^="hcs://"]',
+                    ),
+                    s = document.querySelectorAll(
+                      'audio[data-src^="hcs://"], audio[src^="hcs://"]',
+                    ),
+                    o = document.querySelectorAll(
+                      'model-viewer[data-src^="hcs://"]',
+                    ),
+                    d = document.querySelectorAll('link[data-src^="hcs://"]');
+                  document.querySelectorAll('[src^="hcs://"]').forEach(t => {
+                    const e = t.getAttribute('src');
+                    e &&
+                      (t.setAttribute('data-src', e), t.removeAttribute('src'));
+                  }),
+                    await this.processInlineStyles();
+                  const r = [];
+                  [
+                    { elements: e, type: 'script' },
+                    { elements: i, type: 'image' },
+                    { elements: a, type: 'video' },
+                    { elements: s, type: 'audio' },
+                    { elements: o, type: 'glb' },
+                    { elements: d, type: 'css' },
+                  ].forEach(({ elements: t, type: e }) => {
+                    t.forEach(t => {
+                      const i =
+                        parseInt(t.getAttribute('data-load-order') || '') ||
+                        1 / 0;
+                      r.push(this.loadResource(t, e, i));
+                    });
+                  }),
+                    await Promise.all(r);
+                  const c = new MutationObserver(t => {
+                    t.forEach(t => {
+                      var e;
+                      if (
+                        (t.addedNodes.forEach(t => {
+                          var e, i, a;
+                          if (t.nodeType === Node.ELEMENT_NODE) {
+                            const s = t;
+                            if (
+                              ((null == (e = s.getAttribute('style'))
+                                ? void 0
+                                : e.includes('hcs://')) &&
+                                this.processInlineStyles(),
+                              'style' === s.tagName.toLowerCase() &&
+                                (null == (i = s.textContent)
+                                  ? void 0
+                                  : i.includes('hcs://')) &&
+                                this.processInlineStyles(),
+                              null == (a = s.getAttribute('src'))
+                                ? void 0
+                                : a.startsWith('hcs://'))
+                            ) {
+                              const t = s.getAttribute('src');
+                              s.setAttribute('data-src', t),
+                                s.removeAttribute('src');
+                              switch (s.tagName.toLowerCase()) {
+                                case 'img':
+                                  this.loadResource(s, 'image', 1 / 0);
+                                  break;
+                                case 'video':
+                                  this.loadResource(s, 'video', 1 / 0);
+                                  break;
+                                case 'audio':
+                                  this.loadResource(s, 'audio', 1 / 0);
+                                  break;
+                                case 'script':
+                                  this.loadResource(s, 'script', 1 / 0);
+                              }
+                            }
+                            s.matches('script[data-src^="hcs://"]')
+                              ? this.loadResource(s, 'script', 1 / 0)
+                              : s.matches('img[data-src^="hcs://"]')
+                                ? this.loadResource(s, 'image', 1 / 0)
+                                : s.matches('video[data-src^="hcs://"]')
+                                  ? this.loadResource(s, 'video', 1 / 0)
+                                  : s.matches('audio[data-src^="hcs://"]')
+                                    ? this.loadResource(s, 'audio', 1 / 0)
+                                    : s.matches(
+                                          'model-viewer[data-src^="hcs://"]',
+                                        )
+                                      ? this.loadResource(s, 'glb', 1 / 0)
+                                      : s.matches('link[data-src^="hcs://"]') &&
+                                        this.loadResource(s, 'css', 1 / 0);
+                            s.querySelectorAll(
+                              '[data-src^="hcs://"], [src^="hcs://"]',
+                            ).forEach(t => {
+                              const e = t,
+                                i = e.tagName.toLowerCase(),
+                                a = e.getAttribute('src');
+                              switch (
+                                ((null == a
+                                  ? void 0
+                                  : a.startsWith('hcs://')) &&
+                                  (e.setAttribute('data-src', a),
+                                  e.removeAttribute('src')),
+                                i)
+                              ) {
+                                case 'script':
+                                  this.loadResource(e, 'script', 1 / 0);
+                                  break;
+                                case 'img':
+                                  this.loadResource(e, 'image', 1 / 0);
+                                  break;
+                                case 'video':
+                                  this.loadResource(e, 'video', 1 / 0);
+                                  break;
+                                case 'audio':
+                                  this.loadResource(e, 'audio', 1 / 0);
+                                  break;
+                                case 'model-viewer':
+                                  this.loadResource(e, 'glb', 1 / 0);
+                                  break;
+                                case 'link':
+                                  this.loadResource(e, 'css', 1 / 0);
+                              }
+                            });
+                          }
+                        }),
+                        'attributes' === t.type)
+                      ) {
+                        const i = t.target;
+                        if (
+                          'style' === t.attributeName &&
+                          (null == (e = i.getAttribute('style'))
+                            ? void 0
+                            : e.includes('hcs://'))
+                        )
+                          this.processInlineStyles();
+                        else if ('src' === t.attributeName) {
+                          const t = i.getAttribute('src');
+                          if (null == t ? void 0 : t.startsWith('hcs://')) {
+                            i.setAttribute('data-src', t),
+                              i.removeAttribute('src');
+                            const e = i.tagName.toLowerCase();
+                            ['img', 'video', 'audio'].includes(e) &&
+                              this.loadResource(i, e, 1 / 0);
+                          }
+                        }
+                      }
+                    });
+                  });
+                  document.body
+                    ? c.observe(document.body, {
+                        childList: !0,
+                        subtree: !0,
+                        attributes: !0,
+                        attributeFilter: ['style', 'src', 'data-src'],
+                      })
+                    : document.addEventListener('DOMContentLoaded', () => {
+                        c.observe(document.body, {
+                          childList: !0,
+                          subtree: !0,
+                          attributes: !0,
+                          attributeFilter: ['style', 'src', 'data-src'],
+                        });
+                      }),
+                    t();
+                };
+                'loading' === document.readyState
+                  ? document.addEventListener('DOMContentLoaded', e)
+                  : e();
+              })
+            );
+          }
+          async preloadImage(t) {
+            this.log('Loading image:' + t),
+              this.updateLoadingStatus('image: ' + t, 'loading');
+            const e = await this.retrieveHCS1Data(t),
+              i = URL.createObjectURL(e);
+            return (
+              (this.LoadedImages[t] = i),
+              this.updateLoadingStatus('image: ' + t, 'loaded'),
+              i
+            );
+          }
+          async preloadAudio(t) {
+            const e = document.createElement('audio');
+            e.setAttribute('data-topic-id', t),
+              e.setAttribute('data-src', 'hcs://1/' + t),
+              document.body.appendChild(e),
+              await this.loadMedia(e, 'audio');
+            const i = document.querySelector(
+              'audio[data-topic-id="' + t + '"]',
+            );
+            return (
+              i
+                ? (this.LoadedAudioUrls[t] = i.src)
+                : console.error('Failed to preload audio: ' + t),
+              this.LoadedAudioUrls[t]
+            );
+          }
+          async playAudio(t, e = 1) {
+            const i = this.LoadedAudioUrls[t];
+            if (i) {
+              const a = new Audio(i);
+              (a.volume = e),
+                (this.LoadedAudios[t] = a),
+                a.play().catch(t => {
+                  console.error('Failed to play audio:', t);
+                }),
+                a.addEventListener('ended', () => {
+                  a.remove(), delete this.LoadedAudios[t];
+                });
+            } else console.error('Audio not preloaded: ' + t);
+          }
+          async pauseAudio(t) {
+            var e, i;
+            const a = document.querySelector(
+              'audio[data-topic-id="' + t + '"]',
+            );
+            a
+              ? (console.log('found element', a),
+                a.pause(),
+                null == (e = this.LoadedAudios[t]) || e.pause())
+              : null == (i = this.LoadedAudios[t]) || i.pause();
+          }
+          async loadAndPlayAudio(t, e = !1, i = 1) {
+            let a = document.querySelector('audio[data-topic-id="' + t + '"]');
+            if (a) (a.volume = i), await a.play();
+            else {
+              const s = document.createElement('audio');
+              (s.volume = i),
+                e && s.setAttribute('autoplay', 'autoplay'),
+                s.setAttribute('data-topic-id', t),
+                s.setAttribute('data-src', 'hcs://1/' + t),
+                document.body.appendChild(s),
+                await this.loadMedia(s, 'audio'),
+                (a = document.querySelector(
+                  'audio[data-topic-id="' + t + '"]',
+                )),
+                e || (await a.play());
+            }
+          }
+        }
+        (window.HCS = new e()),
+          window.HCS.init().then(() => {
+            console.log('All HCS resources loaded'),
+              'function' == typeof window.HCSReady &&
+                (console.log('Running HCSReady...'), window.HCSReady());
+          });
+        const i = window.HCS;
+        (t.HCS = e),
+          (t.default = i),
+          (t.sleep = t => new Promise(e => setTimeout(e, t))),
+          Object.defineProperties(t, {
+            __esModule: { value: !0 },
+            [Symbol.toStringTag]: { value: 'Module' },
+          });
+      });
+    </script>
+  </body>
+</html>

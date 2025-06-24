@@ -1,0 +1,89 @@
+<!-- Stats Block Template -->
+<div class="hashlink-block stats-block" data-block-id="{{blockId}}">
+  <h3>{{attributes.title}}</h3>
+  
+  <div class="stats-grid">
+    {{#if attributes.values}}
+      {{#each attributes.values}}
+      <div class="stat-item">
+        <div class="stat-label">{{this.label}}</div>
+        <div class="stat-value">{{this.value}}</div>
+      </div>
+      {{/each}}
+    {{else}}
+      <div class="no-data">No statistics available</div>
+    {{/if}}
+  </div>
+  
+  {{#if actions.refresh}}
+  <div class="stats-actions">
+    <button data-action="{{actions.refresh}}" data-params='{"operation": "refresh"}'>
+      Refresh Stats
+    </button>
+  </div>
+  {{/if}}
+</div>
+
+<style>
+.stats-block {
+  padding: 15px;
+  background: #f0f4f8;
+  border-radius: 8px;
+}
+
+.stats-block h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 15px;
+}
+
+.stat-item {
+  background: white;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.stat-label {
+  font-size: 0.85em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #007cba;
+}
+
+.no-data {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+}
+
+.stats-actions {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.stats-actions button {
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.stats-actions button:hover {
+  background: #218838;
+}
+</style>

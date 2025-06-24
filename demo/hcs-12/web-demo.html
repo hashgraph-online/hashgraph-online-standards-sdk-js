@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HCS-12 HashLinks Web Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #444;
+        }
+        .counter-block {
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            text-align: center;
+            background: #f9f9f9;
+        }
+        .counter-block h2 {
+            margin: 0 0 20px 0;
+            font-size: 2em;
+            color: #333;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .controls button {
+            margin: 0 5px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .controls button:hover {
+            background: #0056b3;
+        }
+        .controls button:active {
+            transform: scale(0.95);
+        }
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .code {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HCS-12 HashLinks Web Demo</h1>
+        <p class="subtitle">Local demonstration of WASM action binding</p>
+
+        <div class="info-box">
+            <strong>⚠️ Prerequisites:</strong><br>
+            1. Build the WASM first: <code>cd rust-wasm && ./build.sh</code><br>
+            2. Serve this directory: <code>npx http-server -p 8080</code><br>
+            3. Open <a href="http://localhost:8080/web-demo.html">http://localhost:8080/web-demo.html</a><br><br>
+            <strong>Note:</strong> This is a local demo showing how blocks bind to actions.
+            For a full deployment to Hedera, run <code>npm run demo:hcs12</code>
+        </div>
+
+        <div class="section">
+            <h2>1. WASM Module Info</h2>
+            <p>First, we load the WASM module and extract its INFO:</p>
+            <div class="code" id="module-info">Loading WASM module...</div>
+        </div>
+
+        <div class="section">
+            <h2>2. Counter Block Demo</h2>
+            <p>This simulates how a block would render and bind to actions:</p>
+
+            <!-- This is what the block template would generate -->
+            <div class="counter-block" id="counter-block">
+                <h2>Counter: <span id="counter-value">0</span></h2>
+                <div class="controls">
+                    <button data-action="increment" data-params='{"amount": 1}'>Increment</button>
+                    <button data-action="decrement" data-params='{"amount": 1}'>Decrement</button>
+                    <button data-action="reset">Reset</button>
+                </div>
+            </div>
+
+            <div id="action-status"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. Action Binding in Templates</h2>
+            <p>In a real HashLink, the block template would look like:</p>
+            <div class="code">
+&lt;div class="counter-block"&gt;
+  &lt;h2&gt;Counter: {{attributes.count}}&lt;/h2&gt;
+  &lt;div class="controls"&gt;
+    &lt;button data-action="{{actions.0}}" data-params='{"amount": 1}'&gt;+&lt;/button&gt;
+    &lt;button data-action="{{actions.1}}" data-params='{"amount": 1}'&gt;-&lt;/button&gt;
+    &lt;button data-action="{{actions.2}}"&gt;Reset&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+            </div>
+            <p>Where <code>actions.0</code>, <code>actions.1</code>, etc. reference the action aliases defined in the assembly.</p>
+        </div>
+
+        <div class="section">
+            <h2>4. Action Execution Log</h2>
+            <div class="code" id="execution-log" style="min-height: 100px; max-height: 200px; overflow-y: auto;">
+                Waiting for actions...
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the WASM module
+        import init, { WasmInterface } from './rust-wasm/pkg/hashlink_counter.js';
+
+        let wasmInterface = null;
+        let currentCount = 0;
+        const log = [];
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.push(`[${timestamp}] ${message}`);
+            document.getElementById('execution-log').innerHTML = log.join('<br>');
+            document.getElementById('execution-log').scrollTop = document.getElementById('execution-log').scrollHeight;
+        }
+
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('action-status');
+            statusEl.className = `status ${isError ? 'error' : 'success'}`;
+            statusEl.textContent = message;
+            setTimeout(() => {
+                statusEl.textContent = '';
+                statusEl.className = '';
+            }, 3000);
+        }
+
+        async function executeAction(actionName, params = {}) {
+            if (!wasmInterface) {
+                showStatus('WASM module not loaded', true);
+                return;
+            }
+
+            // Add current count to params
+            const fullParams = {
+                ...params,
+                count: currentCount
+            };
+
+            addLog(`Executing action: ${actionName} with params: ${JSON.stringify(fullParams)}`);
+
+            try {
+                // Disable buttons while processing
+                document.getElementById('counter-block').classList.add('loading');
+
+                // Call the WASM POST method
+                const result = await wasmInterface.POST(
+                    actionName,
+                    JSON.stringify(fullParams),
+                    'testnet',
+                    'demo-hashlink'
+                );
+
+                const response = JSON.parse(result);
+                addLog(`Result: ${result}`);
+
+                if (response.success) {
+                    // Update counter if count is in response
+                    if (response.data && typeof response.data.count === 'number') {
+                        currentCount = response.data.count;
+                        document.getElementById('counter-value').textContent = currentCount;
+                    }
+                    showStatus(response.message || 'Action executed successfully');
+                } else {
+                    showStatus(response.error || 'Action failed', true);
+                }
+            } catch (error) {
+                addLog(`Error: ${error.message}`);
+                showStatus(`Error: ${error.message}`, true);
+            } finally {
+                document.getElementById('counter-block').classList.remove('loading');
+            }
+        }
+
+        async function loadWasmModule() {
+            try {
+                // Initialize WASM
+                await init();
+                wasmInterface = new WasmInterface();
+
+                // Get module INFO
+                const info = wasmInterface.INFO();
+                const moduleInfo = JSON.parse(info);
+
+                // Display module info
+                document.getElementById('module-info').innerHTML = `
+                    <strong>Module:</strong> ${moduleInfo.name} v${moduleInfo.version}<br>
+                    <strong>Purpose:</strong> ${moduleInfo.purpose}<br>
+                    <strong>Actions:</strong> ${moduleInfo.actions.map(a => a.name).join(', ')}<br>
+                    <strong>INFO Hash:</strong> ${await crypto.subtle.digest('SHA-256', new TextEncoder().encode(info)).then(buf =>
+                        Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+                    )}
+                `;
+
+                addLog('WASM module loaded successfully');
+                addLog(`Available actions: ${moduleInfo.actions.map(a => a.name).join(', ')}`);
+
+            } catch (error) {
+                console.error('Failed to load WASM:', error);
+                document.getElementById('module-info').innerHTML = `
+                    <span style="color: red;">Failed to load WASM module: ${error.message}</span>
+                `;
+            }
+        }
+
+        // Set up event listeners for action buttons
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load WASM module
+            loadWasmModule();
+
+            // Bind click events to buttons with data-action attributes
+            document.querySelectorAll('[data-action]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const action = e.target.getAttribute('data-action');
+                    const paramsStr = e.target.getAttribute('data-params');
+                    const params = paramsStr ? JSON.parse(paramsStr) : {};
+
+                    executeAction(action, params);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

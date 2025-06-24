@@ -12,7 +12,6 @@ describe('detectKeyTypeFromString', () => {
     });
 
     it('should detect ED25519 key by length (96 chars)', () => {
-      // Generate a valid ED25519 private key
       const privateKey = PrivateKey.generateED25519();
       const keyString = privateKey.toString();
 
@@ -55,7 +54,6 @@ describe('detectKeyTypeFromString', () => {
     });
 
     it('should detect ECDSA key by length (88 chars)', () => {
-      // Generate a valid ECDSA private key
       const privateKey = PrivateKey.generateECDSA();
       const keyString = privateKey.toString();
 
@@ -76,7 +74,6 @@ describe('detectKeyTypeFromString', () => {
     });
 
     it('should handle keys without obvious indicators', () => {
-      // Generate a key and strip any obvious indicators
       const privateKey = PrivateKey.generateED25519();
       const keyString = privateKey.toString();
 
@@ -103,7 +100,7 @@ describe('detectKeyTypeFromString', () => {
     });
 
     it('should throw error for malformed hex string', () => {
-      const malformedKey = '0xGHIJKL'; // Invalid hex characters
+      const malformedKey = '0xGHIJKL';
 
       expect(() => detectKeyTypeFromString(malformedKey)).toThrow(
         /Failed to parse private key/,

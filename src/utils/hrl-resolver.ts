@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Logger, LogLevel } from './logger';
 import { NetworkType } from './types';
+import { HederaMirrorNode } from '../services';
 
 /**
  * Options for HRL resolution
@@ -104,6 +105,54 @@ export class HRLResolver {
     }
 
     return true;
+  }
+
+  /**
+   * Validates if a string is a valid topic ID
+   */
+  public isValidTopicId(topicId: string): boolean {
+    const topicIdPattern = /^[0-9]+\.[0-9]+\.[0-9]+$/;
+    return topicIdPattern.test(topicId);
+  }
+
+  /**
+   * Resolves content from either an HRL or a topic ID
+   * If a topic ID is provided, it queries the topic memo to determine the HCS standard
+   */
+  public async resolve(
+    hrlOrTopicId: string,
+    options: HRLResolutionOptions,
+  ): Promise<HRLResolutionResult> {
+    if (this.isValidHRL(hrlOrTopicId)) {
+      return this.resolveHRL(hrlOrTopicId, options);
+    }
+
+    if (!this.isValidTopicId(hrlOrTopicId)) {
+      throw new Error(`Invalid HRL or topic ID format: ${hrlOrTopicId}`);
+    }
+
+    try {
+      const mirrorNode = new HederaMirrorNode(options.network, this.logger);
+      const topicInfo = await mirrorNode.getTopicInfo(hrlOrTopicId);
+      const memo = topicInfo?.memo || '';
+
+      let standard = '1';
+      if (memo) {
+        const hcsMatch = memo.match(/^hcs-(\d+)/);
+        if (hcsMatch && hcsMatch[1]) {
+          standard = hcsMatch[1];
+        }
+      }
+
+      const hrl = `hcs://${standard}/${hrlOrTopicId}`;
+      return this.resolveHRL(hrl, options);
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to get topic info for ${hrlOrTopicId}: ${error.message}`,
+      );
+      const hrl = `hcs://1/${hrlOrTopicId}`;
+      return this.resolveHRL(hrl, options);
+    }
   }
 
   public async getContentWithType(

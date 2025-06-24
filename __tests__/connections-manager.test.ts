@@ -1,7 +1,6 @@
 import { ConnectionsManager } from '../src/hcs-10/connections-manager';
 import { HCSMessage, HCS10BaseClient } from '../src/hcs-10/base-client';
 
-// Mock the baseClient
 class MockHCS10Client extends HCS10BaseClient {
   constructor() {
     super({
@@ -10,8 +9,6 @@ class MockHCS10Client extends HCS10BaseClient {
     });
   }
 
-  // For tests we don't need the actual implementation
-  // @ts-ignore - intentionally incomplete mock for tests
   async submitPayload() {
     return { topicSequenceNumber: { toNumber: () => 123 } };
   }
@@ -44,7 +41,6 @@ describe('ConnectionsManager', () => {
 
   beforeEach(() => {
     mockClient = new MockHCS10Client();
-    // @ts-ignore - type error in mock is acceptable for tests
     manager = new ConnectionsManager({
       baseClient: mockClient,
       logLevel: 'error',
@@ -84,7 +80,6 @@ describe('ConnectionsManager', () => {
     });
 
     it('should process connection confirmations and update pending connections', () => {
-      // First add a pending connection
       const requestMessage: HCSMessage = {
         p: 'hcs-10',
         op: 'connection_request',
@@ -99,7 +94,6 @@ describe('ConnectionsManager', () => {
 
       manager.processOutboundMessages([requestMessage], mockAccountId);
 
-      // Now process the confirmation
       const confirmationMessage: HCSMessage = {
         p: 'hcs-10',
         op: 'connection_created',
@@ -119,10 +113,8 @@ describe('ConnectionsManager', () => {
         mockAccountId,
       );
 
-      // The pending connection should be replaced with an established one
       expect(connections).toHaveLength(2);
 
-      // Find the established connection
       const establishedConn = connections.find(
         conn =>
           conn.status === 'established' &&
@@ -136,7 +128,6 @@ describe('ConnectionsManager', () => {
     });
 
     it('should process connection closed messages', () => {
-      // Set up an established connection first
       const connectionTopicId = '0.0.222222';
       manager.updateOrAddConnection({
         connectionTopicId,
@@ -148,7 +139,6 @@ describe('ConnectionsManager', () => {
         processed: false,
       });
 
-      // Now process a close message
       const closeMessage: HCSMessage = {
         p: 'hcs-10',
         op: 'close_connection',
@@ -203,7 +193,6 @@ describe('ConnectionsManager', () => {
     });
 
     it('should process connection confirmations on the inbound topic', () => {
-      // First add a needs confirmation connection
       const requestMessage: HCSMessage = {
         p: 'hcs-10',
         op: 'connection_request',
@@ -216,7 +205,6 @@ describe('ConnectionsManager', () => {
 
       manager.processInboundMessages([requestMessage], mockAccountId);
 
-      // Now process the confirmation
       const confirmationMessage: HCSMessage = {
         p: 'hcs-10',
         op: 'connection_created',
@@ -235,10 +223,8 @@ describe('ConnectionsManager', () => {
         mockAccountId,
       );
 
-      // The needs confirmation connection should be replaced with an established one
       expect(connections).toHaveLength(2);
 
-      // Find the established connection
       const establishedConn = connections.find(
         conn =>
           conn.status === 'established' &&
@@ -331,7 +317,6 @@ describe('ConnectionsManager', () => {
 
   describe('profile management', () => {
     it('should update connections with profile information', () => {
-      // Set up a connection
       const connectionTopicId = '0.0.222222';
       const targetAccountId = '0.0.654321';
       manager.updateOrAddConnection({
@@ -344,7 +329,6 @@ describe('ConnectionsManager', () => {
         processed: false,
       });
 
-      // Add profile info
       const profile = {
         display_name: 'Test Agent',
         inboundTopicId: '0.0.111111',
@@ -361,7 +345,6 @@ describe('ConnectionsManager', () => {
 
       manager.addProfileInfo(targetAccountId, profile);
 
-      // Get the connection
       const connection = manager.getConnectionByTopicId(connectionTopicId);
 
       expect(connection).toBeDefined();
@@ -374,7 +357,6 @@ describe('ConnectionsManager', () => {
 
   describe('connection retrieval methods', () => {
     beforeEach(() => {
-      // Set up some test connections
       manager.updateOrAddConnection({
         connectionTopicId: '0.0.222222',
         targetAccountId: '0.0.654321',
@@ -443,7 +425,6 @@ describe('ConnectionsManager', () => {
     it('should properly handle multiple active connections with the same account ID', () => {
       const commonAccountId = '0.0.654321';
 
-      // Set up two established connections with the same account ID but different topic IDs
       const connectionTopicId1 = '0.0.111111';
       const connectionTopicId2 = '0.0.222222';
 
@@ -469,21 +450,17 @@ describe('ConnectionsManager', () => {
         processed: false,
       });
 
-      // Get all connections - should have both
       const allConnections = manager.getAllConnections();
       expect(allConnections.length).toBe(2);
 
-      // Get by account ID - should return one of them (first match)
       const singleConnection =
         manager.getConnectionByAccountId(commonAccountId);
       expect(singleConnection).toBeDefined();
 
-      // Get all for this account - should have both
       const accountConnections =
         manager.getConnectionsByAccountId(commonAccountId);
       expect(accountConnections.length).toBe(2);
 
-      // Verify we can get each specifically by topic ID
       const conn1 = manager.getConnectionByTopicId(connectionTopicId1);
       const conn2 = manager.getConnectionByTopicId(connectionTopicId2);
 
@@ -499,12 +476,10 @@ describe('ConnectionsManager', () => {
       const inboundTopicId = '0.0.111111';
       const requestId = 123;
 
-      // Initially should not be processed
       expect(
         manager.isConnectionRequestProcessed(inboundTopicId, requestId),
       ).toBe(false);
 
-      // Create a connection with this request ID
       manager.updateOrAddConnection({
         connectionTopicId: '0.0.222222',
         targetAccountId: '0.0.654321',
@@ -517,19 +492,16 @@ describe('ConnectionsManager', () => {
         processed: false,
       });
 
-      // Still should be false since processed is false
       expect(
         manager.isConnectionRequestProcessed(inboundTopicId, requestId),
       ).toBe(false);
 
-      // Mark as processed
       const result = manager.markConnectionRequestProcessed(
         inboundTopicId,
         requestId,
       );
       expect(result).toBe(true);
 
-      // Now should return true
       expect(
         manager.isConnectionRequestProcessed(inboundTopicId, requestId),
       ).toBe(true);
@@ -540,7 +512,6 @@ describe('ConnectionsManager', () => {
       const inboundRequestId = 123;
       const outboundRequestId = 456;
 
-      // Create connections with different request types
       manager.updateOrAddConnection({
         connectionTopicId: 'inbound-conn',
         targetAccountId: '0.0.654321',
@@ -565,10 +536,8 @@ describe('ConnectionsManager', () => {
         processed: false,
       });
 
-      // Mark inbound as processed
       manager.markConnectionRequestProcessed(inboundTopicId, inboundRequestId);
 
-      // Check that inbound is processed but outbound is not
       expect(
         manager.isConnectionRequestProcessed(inboundTopicId, inboundRequestId),
       ).toBe(true);
@@ -576,10 +545,8 @@ describe('ConnectionsManager', () => {
         manager.isConnectionRequestProcessed(inboundTopicId, outboundRequestId),
       ).toBe(false);
 
-      // Now mark outbound as processed
       manager.markConnectionRequestProcessed(inboundTopicId, outboundRequestId);
 
-      // Both should be processed now
       expect(
         manager.isConnectionRequestProcessed(inboundTopicId, inboundRequestId),
       ).toBe(true);
@@ -593,7 +560,6 @@ describe('ConnectionsManager', () => {
       const topicId2 = '0.0.222222';
       const requestId = 123;
 
-      // Create a connection with topicId1
       manager.updateOrAddConnection({
         connectionTopicId: 'conn1',
         targetAccountId: '0.0.654321',
@@ -606,12 +572,10 @@ describe('ConnectionsManager', () => {
         processed: true,
       });
 
-      // Should find it with the correct topic ID
       expect(manager.isConnectionRequestProcessed(topicId1, requestId)).toBe(
         true,
       );
 
-      // Should not find it with a different topic ID
       expect(manager.isConnectionRequestProcessed(topicId2, requestId)).toBe(
         false,
       );
