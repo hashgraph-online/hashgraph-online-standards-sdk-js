@@ -15,7 +15,7 @@ export default defineConfig(async () => {
   }
 
   const externalDependencies = [
-    '@hashgraphonline/hedera-agent-kit',
+    'hedera-agent-kit',
     '@hashgraph/proto',
     '@hashgraph/sdk',
     'fetch-retry',
@@ -78,17 +78,17 @@ export default defineConfig(async () => {
         output:
           format === 'cjs'
             ? {
-                exports: 'named',
-                format: 'cjs',
-              }
+              exports: 'named',
+              format: 'cjs',
+            }
             : {
-                globals: id => id,
-                preserveModules: format === 'es',
-                preserveModulesRoot: format === 'es' ? 'src' : undefined,
-                exports: 'named',
-                inlineDynamicImports: format === 'umd',
-                name: format === 'umd' ? 'StandardsSDK' : undefined,
-              },
+              globals: id => id,
+              preserveModules: format === 'es',
+              preserveModulesRoot: format === 'es' ? 'src' : undefined,
+              exports: 'named',
+              inlineDynamicImports: format === 'umd',
+              name: format === 'umd' ? 'StandardsSDK' : undefined,
+            },
       },
       minify: 'terser',
       sourcemap: true,

@@ -2,9 +2,10 @@ import dotenv from 'dotenv';
 import { HCS10Client, HCSMessage, Logger, ConnectionsManager } from '../../src';
 import { extractAllText, getOrCreateBob, monitorTopics } from './utils.js';
 import {
+  getAllHederaCorePlugins,
   HederaConversationalAgent,
   ServerSigner,
-} from '@hashgraphonline/hedera-agent-kit';
+} from 'hedera-agent-kit';
 import { ScheduleCreateTransaction } from '@hashgraph/sdk';
 
 const logger = new Logger({
@@ -194,11 +195,14 @@ async function handleStandardMessage(
   }
 
   const hederaAgent = new HederaConversationalAgent(agentSigner, {
-    operationalMode: 'provideBytes',
+    operationalMode: 'returnBytes',
     userAccountId,
     verbose: false,
     openAIApiKey: process.env.OPENAI_API_KEY!,
     scheduleUserTransactionsInBytesMode: false,
+    pluginConfig: {
+      plugins: getAllHederaCorePlugins()
+    }
   });
   await hederaAgent.initialize();
 
